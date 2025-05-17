@@ -37,7 +37,7 @@ let trunk = trunks.find(t => t.name === trunkName);
 if (trunk) {
   console.log('Deleting existing LiveKit SIP inbound trunk');
   await sipClient.deleteSipTrunk(trunk.sipTrunkId);
-  trunk = null;
+  trunk = undefined;
 }
 
 console.log('Creating LiveKit SIP inbound trunk');
@@ -59,7 +59,7 @@ let dispatchRule = dispatchRules.find(r => r.name === dispatchRuleName);
 if (dispatchRule) {
   console.log('Deleting existing LiveKit SIP dispatch rule');
   await sipClient.deleteSipDispatchRule(dispatchRule.sipDispatchRuleId);
-  dispatchRule = null;
+  dispatchRule = undefined;
 }
 
 console.log('Creating LiveKit SIP dispatch rule');
