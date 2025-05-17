@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 
 app.get('/', (req, res) => {
-  res.send('LiveKit SIP Agent is running');
+  res.send('LiveKit SIP Agent is running - DIAGNOSTIC MODE');
 });
 
 app.get('/health', (req, res) => {
@@ -25,8 +25,8 @@ app.listen(PORT, () => {
   console.log(`Web server is running on port ${PORT}`);
   
   // Start the LiveKit agent in a separate process
-  const agentPath = path.join(__dirname, 'agent.ts');
-  console.log(`Starting LiveKit agent from: ${agentPath}`);
+  const agentPath = path.join(__dirname, 'simple-agent.ts');
+  console.log(`Starting diagnostic LiveKit agent from: ${agentPath}`);
   
   const agentProcess = exec(`npx tsx ${agentPath} dev`, (error, stdout, stderr) => {
     if (error) {
@@ -51,5 +51,5 @@ app.listen(PORT, () => {
     console.log(`Agent process exited with code ${code}`);
   });
   
-  console.log('LiveKit agent started in separate process');
+  console.log('LiveKit diagnostic agent started in separate process');
 }); 

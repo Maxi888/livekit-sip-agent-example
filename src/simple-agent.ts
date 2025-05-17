@@ -31,32 +31,59 @@ const agent = defineAgent({
       await ctx.connect();
       console.log('Agent connected to room successfully');
       
+      // Log room information
+      console.log(`Room name: ${ctx.room.name}`);
+      
+      // Add detailed event handlers
+      ctx.room.on('trackPublished', (publication: any, participant: any) => {
+        console.log(`TRACK PUBLISHED by ${participant.identity}`);
+        console.log(`Track kind: ${publication.kind || 'unknown'}`);
+        console.log(`Track name: ${publication.trackName || 'unnamed'}`);
+        console.log(`Track source: ${publication.source || 'unknown'}`);
+        console.log(`Track enabled: ${publication.enabled !== undefined ? publication.enabled : 'unknown'}`);
+        
+        // Try to subscribe to the track
+        try {
+          if (typeof publication.setSubscribed === 'function') {
+            publication.setSubscribed(true);
+          }
+        } catch (err) {
+          console.log(`Could not subscribe to track: ${err}`);
+        }
+      });
+      
+      ctx.room.on('trackSubscribed', (track: any, publication: any, participant: any) => {
+        console.log(`TRACK SUBSCRIBED from ${participant.identity}`);
+        console.log(`Track kind: ${track.kind || 'unknown'}`);
+        console.log(`Track muted: ${track.muted !== undefined ? track.muted : 'unknown'}`);
+        
+        if (track.kind === 'audio') {
+          console.log(`AUDIO TRACK DETECTED - SIP AUDIO IS WORKING!`);
+          // If this logs, we know SIP audio is arriving to the agent
+        }
+      });
+      
       // Wait for a participant to join
       console.log('Waiting for caller to join...');
       const participant = await ctx.waitForParticipant();
       console.log(`Caller joined: ${participant.identity}`);
       
+      // Log participant details safely
+      console.log(`Participant metadata: ${JSON.stringify(participant.metadata || {})}`);
+      
       // Create a simple conversation agent - just log that we've connected
       console.log('CALLER HAS CONNECTED SUCCESSFULLY!');
       console.log('SIP CALL IS WORKING PROPERLY!');
       
-      // Schedule room deletion
-      console.log('Scheduling room deletion in 20 seconds...');
-      setTimeout(async () => {
-        console.log('Deleting room...');
-        try {
-          await roomServiceClient.deleteRoom(ctx.room.name!);
-          console.log('Room deleted successfully');
-        } catch (error) {
-          console.error('Error deleting room:', error);
-        }
-      }, 20000);
+      // Keep the agent running to receive tracks
+      console.log('Keeping agent alive for 60 seconds to receive audio...');
       
-      console.log('Agent processing complete');
-      
-      // Keep the process running for 30 seconds
+      // Keep the process running for 60 seconds
       return new Promise((resolve) => {
-        setTimeout(resolve, 30000);
+        setTimeout(() => {
+          console.log('Test complete, closing agent');
+          resolve();
+        }, 60000);
       });
     } catch (error) {
       console.error('Error in agent:', error);
