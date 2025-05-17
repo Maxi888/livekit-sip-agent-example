@@ -57,7 +57,7 @@ wss.on('connection', (ws, req) => {
   console.log('New WebSocket connection established');
   
   // Parse URL to get room name
-  const urlParams = new URLSearchParams(req.url.split('?')[1] || '');
+  const urlParams = new URLSearchParams((req.url || '').split('?')[1] || '');
   const roomName = urlParams.get('room');
   
   if (!roomName) {
