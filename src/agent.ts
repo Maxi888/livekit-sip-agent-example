@@ -49,11 +49,33 @@ export const agentDefinition = defineAgent({
   entry: async (ctx: JobContext) => {
     console.log('Agent entry point called, attempting to connect...');
     try {
+      // Add logging for room information
+      console.log(`Room name: ${ctx.room.name}`);
+      console.log(`Room metadata: ${JSON.stringify(ctx.room.metadata)}`);
+      
+      // Listen for room events
+      ctx.room.on('participantConnected', (participant) => {
+        console.log(`New participant connected: ${participant.identity}`);
+        console.log(`Participant metadata: ${JSON.stringify(participant.metadata)}`);
+      });
+      
+      ctx.room.on('connectionStateChanged', (state) => {
+        console.log(`Room connection state changed: ${state}`);
+      });
+      
+      // Connect to the room
       await ctx.connect();
       console.log('Successfully connected to LiveKit');
+      console.log(`Room name: ${ctx.room.name}`);
       console.log('waiting for participant');
+      
       const participant = await ctx.waitForParticipant();
       console.log(`starting basic phone agent for ${participant.identity}`);
+      console.log(`Participant info: ${JSON.stringify({
+        identity: participant.identity,
+        sid: participant.sid,
+        metadata: participant.metadata,
+      })}`);
 
       const model = new openai.realtime.RealtimeModel({
         instructions: `You are a helpful assistant accessible by phone.
