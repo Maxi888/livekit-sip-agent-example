@@ -29,7 +29,7 @@ const roomServiceClient = new RoomServiceClient(
   LIVEKIT_API_SECRET,
 );
 
-export default defineAgent({
+export const agentDefinition = defineAgent({
   entry: async (ctx: JobContext) => {
     await ctx.connect();
     console.log('waiting for participant');
@@ -77,4 +77,9 @@ export default defineAgent({
   },
 });
 
-cli.runApp(new WorkerOptions({agent: fileURLToPath(import.meta.url)}));
+// This is executed when the file is run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  cli.runApp(new WorkerOptions({agent: fileURLToPath(import.meta.url)}));
+}
+
+export default agentDefinition;
