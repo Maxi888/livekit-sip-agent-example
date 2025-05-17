@@ -7,6 +7,8 @@ import twilio from 'twilio';
 import { RoomServiceClient } from 'livekit-server-sdk';
 import crypto from 'crypto';
 import { verifyEnv } from './env.js';
+import WebSocket from 'ws';
+import { WebSocketServer } from 'ws';
 
 // Get the current directory
 const __filename = fileURLToPath(import.meta.url);
@@ -37,9 +39,81 @@ const roomService = new RoomServiceClient(
   LIVEKIT_API_SECRET
 );
 
+// Keep track of active calls and rooms
+const activeRooms = new Map();
+
 // Initialize Express app
 const app = express();
 const server = createServer(app);
+
+// Create a WebSocket server for handling Twilio media streams
+const wss = new WebSocketServer({ 
+  server,
+  path: '/media-stream'
+});
+
+// Handle WebSocket connections from Twilio
+wss.on('connection', (ws, req) => {
+  console.log('New WebSocket connection established');
+  
+  // Parse URL to get room name
+  const urlParams = new URLSearchParams(req.url.split('?')[1] || '');
+  const roomName = urlParams.get('room');
+  
+  if (!roomName) {
+    console.error('WebSocket connection missing room parameter');
+    ws.close();
+    return;
+  }
+  
+  console.log(`WebSocket connected for room: ${roomName}`);
+  
+  // Store the connection
+  if (!activeRooms.has(roomName)) {
+    activeRooms.set(roomName, { ws });
+  } else {
+    activeRooms.get(roomName).ws = ws;
+  }
+  
+  // Handle messages from Twilio
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message.toString());
+      
+      // Log media stream events for debugging
+      if (data.event === 'start') {
+        console.log('Media stream started:', data);
+      } else if (data.event === 'media') {
+        // Process media - in this case, just log receipt
+        if (!data.media || !data.media.track) {
+          return;
+        }
+        
+        const { track } = data.media;
+        
+        // Log first couple of media packets then stop to reduce spam
+        if (track === 'inbound' && activeRooms.get(roomName).logCount === undefined) {
+          activeRooms.get(roomName).logCount = 0;
+          console.log('First inbound audio received from Twilio');
+        } else if (track === 'inbound' && activeRooms.get(roomName).logCount < 3) {
+          activeRooms.get(roomName).logCount++;
+          console.log(`Received inbound audio packet #${activeRooms.get(roomName).logCount}`);
+        }
+      } else if (data.event === 'stop') {
+        console.log('Media stream stopped:', data);
+        ws.close();
+      }
+    } catch (error) {
+      console.error('Error parsing WebSocket message:', error);
+    }
+  });
+  
+  // Handle WebSocket close
+  ws.on('close', () => {
+    console.log(`WebSocket closed for room: ${roomName}`);
+    activeRooms.delete(roomName);
+  });
+});
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -90,10 +164,10 @@ app.post('/twilio-webhook', async (req, res) => {
     const response = new VoiceResponse();
     
     // Connect call to the room using WebSockets with bidirectional audio
-    // This will connect to our LiveKit agent
+    // Use Twilio's <Stream> verb properly - they require only a simple WebSocket URL
     const connect = response.connect();
     connect.stream({
-      url: `wss://twilio-media-streams.livekit.cloud/twilio/${roomName}?apiKey=${LIVEKIT_API_KEY}&apiSecret=${LIVEKIT_API_SECRET}&identity=caller`,
+      url: `wss://livekit-sip-agent-eu-68ef5104b68b.herokuapp.com/media-stream?room=${roomName}`,
       track: "both_tracks"
     });
     
@@ -123,7 +197,7 @@ app.post('/twilio-status', (req, res) => {
 
 // Start the web server
 server.listen(PORT, () => {
-  console.log(`Twilio webhook server listening on port ${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
   
   // Start the LiveKit agent in a separate process
   const agentPath = path.join(__dirname, 'agent.ts');
