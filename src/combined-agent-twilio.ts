@@ -21,12 +21,14 @@ const {
   LIVEKIT_URL = '',
   TWILIO_ACCOUNT_SID = '',
   TWILIO_AUTH_TOKEN = '',
+  OPENAI_API_KEY = '',
 } = verifyEnv([
   'LIVEKIT_API_KEY',
   'LIVEKIT_API_SECRET',
   'LIVEKIT_URL',
   'TWILIO_ACCOUNT_SID',
   'TWILIO_AUTH_TOKEN',
+  'OPENAI_API_KEY',
 ]);
 
 // Port configuration - required for Heroku
@@ -41,6 +43,20 @@ const roomService = new RoomServiceClient(
 
 // Keep track of active calls and rooms
 const activeRooms = new Map();
+
+// Store active conversations with state
+interface Conversation {
+  messages: {role: string, content: string}[];
+  callSid: string;
+  from: string;
+  to: string;
+  roomName: string;
+  turnCount: number;
+  createdAt: number;
+}
+
+// Keep track of active conversations
+const activeConversations = new Map<string, Conversation>();
 
 // Initialize Express app
 const app = express();
@@ -192,10 +208,10 @@ app.post('/twilio-webhook', async (req, res) => {
     // Generate a token for the caller
     const response = new VoiceResponse();
     
-    // Add a voice prompt and gather input for testing
-    response.say('Call connected to LiveKit agent demo.');
+    // Add a voice prompt and gather input for the first turn
+    response.say('Hello, thank you for calling. I am an AI assistant. How can I help you today?');
     
-    // Create a gather with input type speech for testing
+    // Create a gather with input type speech
     const gather = response.gather({
       input: ['speech'],
       speechTimeout: 'auto',
@@ -205,10 +221,9 @@ app.post('/twilio-webhook', async (req, res) => {
       language: 'en-US'
     });
     
-    gather.say('Please say something now and I will try to recognize it.');
-    
     // Add a backup say command in case the gather times out
     response.say('I did not hear anything. Please try calling again.');
+    response.hangup();
     
     // Set response content type
     res.setHeader('Content-Type', 'text/xml');
@@ -274,23 +289,120 @@ app.get('/test-ws', (req, res) => {
   `);
 });
 
-// Add an endpoint to handle gather results
-app.post('/gather-result', (req, res) => {
+// Add an endpoint to handle gather results and implement the conversation loop
+app.post('/gather-result', async (req, res) => {
   console.log('Received gather result:', req.body);
   
-  const roomName = req.query.room;
+  const roomName = req.query.room as string;
   const speechResult = req.body.SpeechResult;
+  const callSid = req.body.CallSid;
+  const from = req.body.From;
+  const to = req.body.To;
   
   console.log(`Speech recognized in room ${roomName}: "${speechResult}"`);
   
-  // Create a response that plays back what was recognized
-  const response = new VoiceResponse();
-  response.say(`I heard you say: ${speechResult}`);
-  response.say('Thank you for trying the LiveKit agent demo. Goodbye!');
-  response.hangup();
+  // Initialize or retrieve conversation state
+  let conversation: Conversation;
+  if (!activeConversations.has(callSid)) {
+    conversation = {
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant available by phone. Keep your responses concise and conversational as they will be spoken to the caller. Remember this is a phone conversation.' },
+      ],
+      callSid,
+      from,
+      to,
+      roomName,
+      turnCount: 0,
+      createdAt: Date.now()
+    };
+    activeConversations.set(callSid, conversation);
+  } else {
+    conversation = activeConversations.get(callSid)!;
+  }
   
-  res.setHeader('Content-Type', 'text/xml');
-  res.send(response.toString());
+  // Add user message to conversation
+  conversation.messages.push({ role: 'user', content: speechResult });
+  conversation.turnCount++;
+  
+  // Process with OpenAI API
+  try {
+    // Create OpenAI API request
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: conversation.messages,
+        max_tokens: 200,
+        temperature: 0.7
+      })
+    });
+    
+    if (!openaiResponse.ok) {
+      throw new Error(`OpenAI API responded with status: ${openaiResponse.status}`);
+    }
+    
+    const openaiData = await openaiResponse.json();
+    const assistantResponse = openaiData.choices[0]?.message?.content || "I'm sorry, I couldn't process that request.";
+    
+    // Add assistant response to conversation history
+    conversation.messages.push({ role: 'assistant', content: assistantResponse });
+    
+    console.log(`AI response: "${assistantResponse}"`);
+    
+    // Create Twilio response
+    const response = new VoiceResponse();
+    
+    // Exit conversation after too many turns or if user says goodbye
+    const isGoodbye = speechResult.toLowerCase().includes('goodbye') || 
+                       speechResult.toLowerCase().includes('bye') ||
+                       speechResult.toLowerCase().includes('thank you');
+    
+    if (conversation.turnCount >= 10 || isGoodbye) {
+      // End the conversation
+      response.say(assistantResponse);
+      response.say('Thank you for calling. Goodbye!');
+      response.hangup();
+      
+      // Cleanup the conversation
+      activeConversations.delete(callSid);
+    } else {
+      // Continue the conversation
+      response.say(assistantResponse);
+      
+      // Create a new gather for the next user input
+      const gather = response.gather({
+        input: ['speech'],
+        speechTimeout: 'auto',
+        speechModel: 'phone_call',
+        action: `https://livekit-sip-agent-eu-68ef5104b68b.herokuapp.com/gather-result?room=${roomName}`,
+        method: 'POST',
+        language: 'en-US'
+      });
+      
+      // Add a timeout fallback
+      response.say('I didn\'t hear anything. Thank you for calling. Goodbye!');
+      response.hangup();
+    }
+    
+    // Send TwiML response
+    res.setHeader('Content-Type', 'text/xml');
+    res.send(response.toString());
+    
+  } catch (error) {
+    console.error('Error processing conversational response:', error);
+    
+    // Handle failure gracefully
+    const response = new VoiceResponse();
+    response.say('I apologize, but I encountered an issue processing your request. Please try again later.');
+    response.hangup();
+    
+    res.setHeader('Content-Type', 'text/xml');
+    res.send(response.toString());
+  }
 });
 
 // Start the web server
