@@ -1,1 +1,1 @@
-web: npm install && npx tsx src/server.ts 
+web: npm install && npx tsx src/simple-agent.ts 
