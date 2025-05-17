@@ -1,1 +1,1 @@
-web: npm install && npm run build && node dist/src/agent.js 
+web: npm install && npx tsx src/agent.ts dev 
