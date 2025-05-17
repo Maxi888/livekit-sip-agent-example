@@ -93,7 +93,8 @@ app.post('/twilio-webhook', async (req, res) => {
     // This will connect to our LiveKit agent
     const connect = response.connect();
     connect.stream({
-      url: `${LIVEKIT_URL.replace('wss://', 'wss://')}/twilio?room=${roomName}&identity=caller`,
+      url: `wss://twilio-media-streams.livekit.cloud/twilio/${roomName}?apiKey=${LIVEKIT_API_KEY}&apiSecret=${LIVEKIT_API_SECRET}&identity=caller`,
+      track: "both_tracks"
     });
     
     // Set response content type
