@@ -345,7 +345,13 @@ app.post('/gather-result', async (req, res) => {
       throw new Error(`OpenAI API responded with status: ${openaiResponse.status}`);
     }
     
-    const openaiData = await openaiResponse.json();
+    const openaiData = await openaiResponse.json() as {
+      choices: [{
+        message: {
+          content: string;
+        };
+      }];
+    };
     const assistantResponse = openaiData.choices[0]?.message?.content || "I'm sorry, I couldn't process that request.";
     
     // Add assistant response to conversation history
