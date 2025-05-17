@@ -52,9 +52,12 @@ const wss = new WebSocketServer({
   path: '/media-stream'
 });
 
+console.log('WebSocket server created and listening on path: /media-stream');
+
 // Handle WebSocket connections from Twilio
 wss.on('connection', (ws, req) => {
-  console.log('New WebSocket connection established');
+  console.log('New WebSocket connection established from:', req.headers['user-agent']);
+  console.log('Connection headers:', req.headers);
   
   // Parse URL to get room name
   const urlParams = new URLSearchParams((req.url || '').split('?')[1] || '');
@@ -71,8 +74,10 @@ wss.on('connection', (ws, req) => {
   // Store the connection
   if (!activeRooms.has(roomName)) {
     activeRooms.set(roomName, { ws });
+    console.log(`Created new active room record for ${roomName}`);
   } else {
     activeRooms.get(roomName).ws = ws;
+    console.log(`Updated existing room record for ${roomName}`);
   }
   
   // Handle messages from Twilio
@@ -82,7 +87,7 @@ wss.on('connection', (ws, req) => {
       
       // Log media stream events for debugging
       if (data.event === 'start') {
-        console.log('Media stream started:', data);
+        console.log('Media stream started:', JSON.stringify(data));
       } else if (data.event === 'media') {
         // Process media - in this case, just log receipt
         if (!data.media || !data.media.track) {
@@ -100,19 +105,43 @@ wss.on('connection', (ws, req) => {
           console.log(`Received inbound audio packet #${activeRooms.get(roomName).logCount}`);
         }
       } else if (data.event === 'stop') {
-        console.log('Media stream stopped:', data);
+        console.log('Media stream stopped:', JSON.stringify(data));
         ws.close();
+      } else {
+        console.log(`Unknown event type: ${data.event}`);
       }
     } catch (error) {
       console.error('Error parsing WebSocket message:', error);
+      console.log('Raw message content:', message.toString().substring(0, 100) + '...');
     }
   });
   
+  // Send a ping to keep the connection alive
+  const pingInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      console.log(`Sending ping to keep WebSocket alive for room ${roomName}`);
+      ws.ping();
+    }
+  }, 30000);
+  
+  // Handle WebSocket errors
+  ws.on('error', (error) => {
+    console.error(`WebSocket error for room ${roomName}:`, error);
+  });
+  
   // Handle WebSocket close
-  ws.on('close', () => {
-    console.log(`WebSocket closed for room: ${roomName}`);
+  ws.on('close', (code, reason) => {
+    console.log(`WebSocket closed for room: ${roomName}, code: ${code}, reason: ${reason || 'none'}`);
+    clearInterval(pingInterval);
     activeRooms.delete(roomName);
   });
+  
+  // Send initial message to confirm connection
+  ws.send(JSON.stringify({
+    event: 'connected',
+    room: roomName,
+    timestamp: Date.now()
+  }));
 });
 
 // Middleware
@@ -163,8 +192,11 @@ app.post('/twilio-webhook', async (req, res) => {
     // Generate a token for the caller
     const response = new VoiceResponse();
     
+    // Add a voice prompt to indicate the call was received
+    response.say('Call connected. Please wait while we connect you to an agent.');
+    
     // Connect call to the room using WebSockets with bidirectional audio
-    // Use Twilio's <Stream> verb properly - they require only a simple WebSocket URL
+    // Use Twilio's <Stream> verb properly
     const connect = response.connect();
     connect.stream({
       url: `wss://livekit-sip-agent-eu-68ef5104b68b.herokuapp.com/media-stream?room=${roomName}`,
@@ -193,6 +225,46 @@ app.post('/twilio-webhook', async (req, res) => {
 app.post('/twilio-status', (req, res) => {
   console.log('Call status update:', req.body);
   res.sendStatus(200);
+});
+
+// Add a simple endpoint for testing TwiML responses
+app.get('/test-twiml', (req, res) => {
+  const response = new VoiceResponse();
+  response.say('This is a test of the Twilio response system.');
+  
+  res.setHeader('Content-Type', 'text/xml');
+  res.send(response.toString());
+});
+
+// Add a simple WebSocket test endpoint
+app.get('/test-ws', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>WebSocket Test</title>
+    </head>
+    <body>
+      <h1>WebSocket Test</h1>
+      <div id="status">Connecting...</div>
+      <script>
+        const ws = new WebSocket('wss://' + window.location.host + '/media-stream?room=test-room');
+        ws.onopen = () => {
+          document.getElementById('status').textContent = 'Connected!';
+        };
+        ws.onclose = () => {
+          document.getElementById('status').textContent = 'Disconnected';
+        };
+        ws.onerror = (error) => {
+          document.getElementById('status').textContent = 'Error: ' + error;
+        };
+        ws.onmessage = (event) => {
+          document.getElementById('status').textContent = 'Received: ' + event.data;
+        };
+      </script>
+    </body>
+    </html>
+  `);
 });
 
 // Start the web server
