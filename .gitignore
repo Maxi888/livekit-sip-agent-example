@@ -185,3 +185,5 @@ docs
 
 # direnv
 .direnv
+
+agent_logs.txt
