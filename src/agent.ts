@@ -18,14 +18,26 @@ const {
   LIVEKIT_API_SECRET = '',
   LIVEKIT_URL = '',
   OPENAI_API_KEY = '',
+  SIP_USERNAME = '',
+  SIP_PASSWORD = '',
+  SIP_TRUNK_URI = '',
 } = verifyEnv([
   'LIVEKIT_API_KEY',
   'LIVEKIT_API_SECRET',
   'LIVEKIT_URL',
   'OPENAI_API_KEY',
+  'SIP_USERNAME',
+  'SIP_PASSWORD',
+  'SIP_TRUNK_URI',
+], [
+  'SIP_USERNAME',
+  'SIP_PASSWORD',
+  'SIP_TRUNK_URI',
 ]);
 
 console.log(`Agent starting with LiveKit URL: ${LIVEKIT_URL}`);
+console.log(`SIP credentials configured: Username=${SIP_USERNAME || 'NOT SET'}, Password=${SIP_PASSWORD ? 'SET' : 'NOT SET'}`);
+console.log(`SIP trunk URI: ${SIP_TRUNK_URI || 'NOT SET'}`);
 
 const roomServiceClient = new RoomServiceClient(
   LIVEKIT_URL,
@@ -35,50 +47,56 @@ const roomServiceClient = new RoomServiceClient(
 
 export const agentDefinition = defineAgent({
   entry: async (ctx: JobContext) => {
-    await ctx.connect();
-    console.log('waiting for participant');
-    const participant = await ctx.waitForParticipant();
-    console.log(`starting basic phone agent for ${participant.identity}`);
+    console.log('Agent entry point called, attempting to connect...');
+    try {
+      await ctx.connect();
+      console.log('Successfully connected to LiveKit');
+      console.log('waiting for participant');
+      const participant = await ctx.waitForParticipant();
+      console.log(`starting basic phone agent for ${participant.identity}`);
 
-    const model = new openai.realtime.RealtimeModel({
-      instructions: `You are a helpful assistant accessible by phone.
-        You provide clear, concise answers to any questions the caller might have.
-        Be friendly, professional, and helpful at all times.
-        If the caller asks you to perform tasks you cannot do, politely explain your limitations.`,
-      apiKey: OPENAI_API_KEY,
-    });
+      const model = new openai.realtime.RealtimeModel({
+        instructions: `You are a helpful assistant accessible by phone.
+          You provide clear, concise answers to any questions the caller might have.
+          Be friendly, professional, and helpful at all times.
+          If the caller asks you to perform tasks you cannot do, politely explain your limitations.`,
+        apiKey: OPENAI_API_KEY,
+      });
 
-    const fncCtx: llm.FunctionContext = {
-      endCall: {
-        description: 'End the call and delete the room',
-        parameters: {},
-        execute: async () => {
-          console.log('Ending call, waiting for 5 seconds before deleting room...');
+      const fncCtx: llm.FunctionContext = {
+        endCall: {
+          description: 'End the call and delete the room',
+          parameters: {},
+          execute: async () => {
+            console.log('Ending call, waiting for 5 seconds before deleting room...');
 
-          // Schedule disconnection
-          setTimeout(async () => {
-            console.log('Deleting room...');
-            await roomServiceClient.deleteRoom(ctx.room.name!);
-          }, 5000);
+            // Schedule disconnection
+            setTimeout(async () => {
+              console.log('Deleting room...');
+              await roomServiceClient.deleteRoom(ctx.room.name!);
+            }, 5000);
 
-          return 'Thank you for calling. Goodbye!';
+            return 'Thank you for calling. Goodbye!';
+          },
         },
-      },
-    };
+      };
 
-    const agent = new multimodal.MultimodalAgent({model, fncCtx});
-    const session = await agent
-      .start(ctx.room, participant)
-      .then(session => session as openai.realtime.RealtimeSession);
+      const agent = new multimodal.MultimodalAgent({model, fncCtx});
+      const session = await agent
+        .start(ctx.room, participant)
+        .then(session => session as openai.realtime.RealtimeSession);
 
-    session.conversation.item.create(
-      new llm.ChatMessage({
-        role: llm.ChatRole.ASSISTANT,
-        content:
-          'Greet the caller warmly and ask how you can help them today.',
-      }),
-    );
-    session.response.create();
+      session.conversation.item.create(
+        new llm.ChatMessage({
+          role: llm.ChatRole.ASSISTANT,
+          content:
+            'Greet the caller warmly and ask how you can help them today.',
+        }),
+      );
+      session.response.create();
+    } catch (error) {
+      console.error('Error in agent:', error);
+    }
   },
 });
 
