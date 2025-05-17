@@ -192,16 +192,23 @@ app.post('/twilio-webhook', async (req, res) => {
     // Generate a token for the caller
     const response = new VoiceResponse();
     
-    // Add a voice prompt to indicate the call was received
-    response.say('Call connected. Please wait while we connect you to an agent.');
+    // Add a voice prompt and gather input for testing
+    response.say('Call connected to LiveKit agent demo.');
     
-    // Connect call to the room using WebSockets with bidirectional audio
-    // Use Twilio's <Stream> verb properly
-    const connect = response.connect();
-    connect.stream({
-      url: `wss://livekit-sip-agent-eu-68ef5104b68b.herokuapp.com/media-stream?room=${roomName}`,
-      track: "both_tracks"
+    // Create a gather with input type speech for testing
+    const gather = response.gather({
+      input: ['speech'],
+      speechTimeout: 'auto',
+      speechModel: 'phone_call',
+      action: `https://livekit-sip-agent-eu-68ef5104b68b.herokuapp.com/gather-result?room=${roomName}`,
+      method: 'POST',
+      language: 'en-US'
     });
+    
+    gather.say('Please say something now and I will try to recognize it.');
+    
+    // Add a backup say command in case the gather times out
+    response.say('I did not hear anything. Please try calling again.');
     
     // Set response content type
     res.setHeader('Content-Type', 'text/xml');
@@ -265,6 +272,25 @@ app.get('/test-ws', (req, res) => {
     </body>
     </html>
   `);
+});
+
+// Add an endpoint to handle gather results
+app.post('/gather-result', (req, res) => {
+  console.log('Received gather result:', req.body);
+  
+  const roomName = req.query.room;
+  const speechResult = req.body.SpeechResult;
+  
+  console.log(`Speech recognized in room ${roomName}: "${speechResult}"`);
+  
+  // Create a response that plays back what was recognized
+  const response = new VoiceResponse();
+  response.say(`I heard you say: ${speechResult}`);
+  response.say('Thank you for trying the LiveKit agent demo. Goodbye!');
+  response.hangup();
+  
+  res.setHeader('Content-Type', 'text/xml');
+  res.send(response.toString());
 });
 
 // Start the web server
