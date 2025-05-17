@@ -82,15 +82,6 @@ export const agentDefinition = defineAgent({
       await ctx.connect();
       console.log('Successfully connected to LiveKit');
       console.log(`Room name: ${ctx.room.name}`);
-      
-      // Log room participants
-      console.log(`Current room participants: ${ctx.room.participants.size}`);
-      if (ctx.room.participants.size > 0) {
-        for (const [identity, participant] of ctx.room.participants.entries()) {
-          console.log(`Existing participant: ${identity}`);
-        }
-      }
-      
       console.log('waiting for participant');
       
       const participant = await ctx.waitForParticipant();
