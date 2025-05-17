@@ -57,16 +57,40 @@ export const agentDefinition = defineAgent({
       ctx.room.on('participantConnected', (participant) => {
         console.log(`New participant connected: ${participant.identity}`);
         console.log(`Participant metadata: ${JSON.stringify(participant.metadata)}`);
+        console.log(`Participant details: ${JSON.stringify(participant)}`);
+        
+        // Log any available methods or properties
+        try {
+          console.log(`Participant properties: ${Object.keys(participant).join(', ')}`);
+        } catch (err) {
+          console.log(`Could not log participant properties: ${err}`);
+        }
       });
       
       ctx.room.on('connectionStateChanged', (state) => {
         console.log(`Room connection state changed: ${state}`);
       });
       
+      // Add special logging for any events happening in the room
+      ctx.room.on('trackPublished', (publication: any, participant: any) => {
+        console.log(`Track published: ${publication.trackName || publication.source || 'unknown'} by ${participant.identity}`);
+        console.log(`Track publication info: ${JSON.stringify(publication)}`);
+        console.log(`Publishing participant info: ${JSON.stringify(participant)}`);
+      });
+      
       // Connect to the room
       await ctx.connect();
       console.log('Successfully connected to LiveKit');
       console.log(`Room name: ${ctx.room.name}`);
+      
+      // Log room participants
+      console.log(`Current room participants: ${ctx.room.participants.size}`);
+      if (ctx.room.participants.size > 0) {
+        for (const [identity, participant] of ctx.room.participants.entries()) {
+          console.log(`Existing participant: ${identity}`);
+        }
+      }
+      
       console.log('waiting for participant');
       
       const participant = await ctx.waitForParticipant();
