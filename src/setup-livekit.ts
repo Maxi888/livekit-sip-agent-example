@@ -33,41 +33,46 @@ const trunkName = 'inbound-trunk';
 const trunks = await sipClient.listSipInboundTrunk();
 let trunk = trunks.find(t => t.name === trunkName);
 
-if (!trunk) {
-  console.log('Creating LiveKit SIP inbound trunk');
-  trunk = await sipClient.createSipInboundTrunk(
-    trunkName,
-    [SPECIFIC_PHONE_NUMBER], // Only accept calls for this specific number
-    {
-      auth_username: SIP_USERNAME,
-      auth_password: SIP_PASSWORD,
-    },
-  );
-} else {
-  console.log('LiveKit SIP inbound trunk already exists');
-  console.log('Note: If you need to update the accepted phone numbers, please delete the trunk first');
+// Delete existing trunk if it exists
+if (trunk) {
+  console.log('Deleting existing LiveKit SIP inbound trunk');
+  await sipClient.deleteSipTrunk(trunk.sipTrunkId);
+  trunk = null;
 }
+
+console.log('Creating LiveKit SIP inbound trunk');
+trunk = await sipClient.createSipInboundTrunk(
+  trunkName,
+  [SPECIFIC_PHONE_NUMBER], // Only accept calls for this specific number
+  {
+    auth_username: SIP_USERNAME,
+    auth_password: SIP_PASSWORD,
+  },
+);
 
 // Create a dispatch rule
 const dispatchRuleName = 'inbound-dispatch-rule';
 const dispatchRules = await sipClient.listSipDispatchRule();
 let dispatchRule = dispatchRules.find(r => r.name === dispatchRuleName);
 
-if (!dispatchRule) {
-  console.log('Creating LiveKit SIP dispatch rule');
-  dispatchRule = await sipClient.createSipDispatchRule(
-    {
-      type: 'individual',
-      roomPrefix: 'call',
-    },
-    {
-      name: dispatchRuleName,
-      trunkIds: [trunk.sipTrunkId],
-    },
-  );
-} else {
-  console.log('LiveKit SIP dispatch rule already exists');
+// Delete existing dispatch rule if it exists
+if (dispatchRule) {
+  console.log('Deleting existing LiveKit SIP dispatch rule');
+  await sipClient.deleteSipDispatchRule(dispatchRule.sipDispatchRuleId);
+  dispatchRule = null;
 }
+
+console.log('Creating LiveKit SIP dispatch rule');
+dispatchRule = await sipClient.createSipDispatchRule(
+  {
+    type: 'individual',
+    roomPrefix: 'call',
+  },
+  {
+    name: dispatchRuleName,
+    trunkIds: [trunk.sipTrunkId],
+  },
+);
 
 console.log(`
 ---
