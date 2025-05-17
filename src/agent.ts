@@ -17,11 +17,15 @@ const {
   LIVEKIT_API_KEY = '',
   LIVEKIT_API_SECRET = '',
   LIVEKIT_URL = '',
+  OPENAI_API_KEY = '',
 } = verifyEnv([
   'LIVEKIT_API_KEY',
   'LIVEKIT_API_SECRET',
   'LIVEKIT_URL',
+  'OPENAI_API_KEY',
 ]);
+
+console.log(`Agent starting with LiveKit URL: ${LIVEKIT_URL}`);
 
 const roomServiceClient = new RoomServiceClient(
   LIVEKIT_URL,
@@ -41,6 +45,7 @@ export const agentDefinition = defineAgent({
         You provide clear, concise answers to any questions the caller might have.
         Be friendly, professional, and helpful at all times.
         If the caller asks you to perform tasks you cannot do, politely explain your limitations.`,
+      apiKey: OPENAI_API_KEY,
     });
 
     const fncCtx: llm.FunctionContext = {

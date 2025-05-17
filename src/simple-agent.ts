@@ -8,10 +8,12 @@ import {
 import {RoomServiceClient} from 'livekit-server-sdk';
 import {fileURLToPath} from 'url';
 
-// Direct configuration values - hard-coding for the test script
-const LIVEKIT_API_KEY = 'APIT7AdAjtqf3oA';
-const LIVEKIT_API_SECRET = 'tDOrcAXqa9ngwGiwhBe338fY7eaL6wTmPe63yfbgWAcF';
-const LIVEKIT_URL = 'wss://vocieagentpipelinetest-1z3kctsj.livekit.cloud';
+// Use environment variables instead of hardcoded values
+const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY || '';
+const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || '';
+const LIVEKIT_URL = process.env.LIVEKIT_URL || '';
+
+console.log(`LiveKit configuration: URL=${LIVEKIT_URL}`);
 
 // Create a room service client
 const roomServiceClient = new RoomServiceClient(

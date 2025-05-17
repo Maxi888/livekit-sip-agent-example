@@ -25,7 +25,7 @@ app.listen(PORT, () => {
   console.log(`Web server is running on port ${PORT}`);
   
   // Start the LiveKit agent in a separate process
-  const agentPath = path.join(__dirname, 'simple-agent.ts');
+  const agentPath = path.join(__dirname, 'agent.ts');
   console.log(`Starting LiveKit agent from: ${agentPath}`);
   
   const agentProcess = exec(`npx tsx ${agentPath} dev`, (error, stdout, stderr) => {
