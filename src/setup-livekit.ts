@@ -5,17 +5,20 @@ const {
   LIVEKIT_API_KEY = '',
   LIVEKIT_API_SECRET = '',
   LIVEKIT_URL = '',
-  TWILIO_PHONE_NUMBER = '',
-  TWILIO_SIP_USERNAME = '',
-  TWILIO_SIP_PASSWORD = '',
+  SIP_TRUNK_URI = '',
+  SIP_USERNAME = '',
+  SIP_PASSWORD = '',
 } = verifyEnv([
   'LIVEKIT_API_KEY',
   'LIVEKIT_API_SECRET',
   'LIVEKIT_URL',
-  'TWILIO_PHONE_NUMBER',
-  'TWILIO_SIP_USERNAME',
-  'TWILIO_SIP_PASSWORD',
+  'SIP_TRUNK_URI',
+  'SIP_USERNAME',
+  'SIP_PASSWORD',
 ]);
+
+// The specific phone number you want to use with this LiveKit agent
+const SPECIFIC_PHONE_NUMBER = '+4991874350352';
 
 const sipClient = new SipClient(
   LIVEKIT_URL,
@@ -25,7 +28,7 @@ const sipClient = new SipClient(
 
 console.log('Setting up LiveKit SIP inbound trunk and dispatch rule');
 
-// Inbound trunk setup: https://docs.livekit.io/sip/quickstarts/configuring-sip-trunk/#inbound-trunk-setup
+// Inbound trunk setup
 const trunkName = 'inbound-trunk';
 const trunks = await sipClient.listSipInboundTrunk();
 let trunk = trunks.find(t => t.name === trunkName);
@@ -34,17 +37,18 @@ if (!trunk) {
   console.log('Creating LiveKit SIP inbound trunk');
   trunk = await sipClient.createSipInboundTrunk(
     trunkName,
-    [TWILIO_PHONE_NUMBER],
+    [SPECIFIC_PHONE_NUMBER], // Only accept calls for this specific number
     {
-      auth_username: TWILIO_SIP_USERNAME,
-      auth_password: TWILIO_SIP_PASSWORD,
+      auth_username: SIP_USERNAME,
+      auth_password: SIP_PASSWORD,
     },
   );
 } else {
   console.log('LiveKit SIP inbound trunk already exists');
+  console.log('Note: If you need to update the accepted phone numbers, please delete the trunk first');
 }
 
-// Create a dispatch rule: https://docs.livekit.io/sip/quickstarts/configuring-sip-trunk/#create-a-dispatch-rule
+// Create a dispatch rule
 const dispatchRuleName = 'inbound-dispatch-rule';
 const dispatchRules = await sipClient.listSipDispatchRule();
 let dispatchRule = dispatchRules.find(r => r.name === dispatchRuleName);
@@ -67,10 +71,11 @@ if (!dispatchRule) {
 
 console.log(`
 ---
-Assuming you've already run the command \`npm run setup:twilio\` then you're all set!
+Setup completed for your custom SIP trunk with LiveKit.
+Configuration set to only answer calls to: ${SPECIFIC_PHONE_NUMBER}
 
 Make sure your \`.env.local\` file has all the required environment variables, including your OpenAI API key.
 
-Now you can run the command \`npm run agent\` and call ${TWILIO_PHONE_NUMBER}
+Now you can run the command \`npm run agent\` and receive calls to ${SPECIFIC_PHONE_NUMBER} through your Schmidtkom SIP trunk.
 ---
 `);
