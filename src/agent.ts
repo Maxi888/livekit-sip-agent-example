@@ -139,7 +139,10 @@ export const agentDefinition = defineAgent({
 
 // This is executed when the file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  cli.runApp(new WorkerOptions({agent: fileURLToPath(import.meta.url)}));
+  cli.runApp(new WorkerOptions({
+    agent: fileURLToPath(import.meta.url),
+    agentName: 'my-telephony-agent',
+  }));
 }
 
 export default agentDefinition;
