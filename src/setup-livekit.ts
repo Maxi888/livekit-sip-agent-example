@@ -29,58 +29,63 @@ const sipClient = new SipClient(
 console.log('Setting up LiveKit SIP inbound trunk and dispatch rule');
 
 // Inbound trunk setup
-const trunkName = 'inbound-trunk';
+const trunkName = 'jambonz-inbound-persistent';  // Changed name to avoid conflicts
 const trunks = await sipClient.listSipInboundTrunk();
 let trunk = trunks.find(t => t.name === trunkName);
 
-// Delete existing trunk if it exists
+// REMOVED: Delete existing trunk logic - we want to keep existing trunks!
 if (trunk) {
-  console.log('Deleting existing LiveKit SIP inbound trunk');
-  await sipClient.deleteSipTrunk(trunk.sipTrunkId);
-  trunk = undefined;
-}
-
+  console.log('Trunk already exists, skipping creation');
+} else {
 console.log('Creating LiveKit SIP inbound trunk');
+  
+  // Create trunk WITHOUT authentication to match middleware
 trunk = await sipClient.createSipInboundTrunk(
   trunkName,
-  [SPECIFIC_PHONE_NUMBER], // Only accept calls for this specific number
+    ['4991874350352'],  // Without + prefix to match Jambonz format
   {
-    auth_username: SIP_USERNAME,
-    auth_password: SIP_PASSWORD,
+      // Only allow calls from Jambonz IP
+      allowed_addresses: ['54.236.168.131'],
+      // NO auth_username or auth_password - we don't want authentication
   },
 );
+  
+  console.log(`Created trunk: ${trunk.sipTrunkId}`);
+}
 
 // Create a dispatch rule
-const dispatchRuleName = 'inbound-dispatch-rule';
+const dispatchRuleName = 'jambonz-dispatch-persistent';  // Changed name
 const dispatchRules = await sipClient.listSipDispatchRule();
 let dispatchRule = dispatchRules.find(r => r.name === dispatchRuleName);
 
-// Delete existing dispatch rule if it exists
+// REMOVED: Delete existing dispatch rule logic
 if (dispatchRule) {
-  console.log('Deleting existing LiveKit SIP dispatch rule');
-  await sipClient.deleteSipDispatchRule(dispatchRule.sipDispatchRuleId);
-  dispatchRule = undefined;
-}
-
+  console.log('Dispatch rule already exists, skipping creation');
+} else {
 console.log('Creating LiveKit SIP dispatch rule');
 dispatchRule = await sipClient.createSipDispatchRule(
   {
     type: 'individual',
-    roomPrefix: 'call',
+      roomPrefix: 'call-',  // Changed to match our previous configuration
   },
   {
     name: dispatchRuleName,
     trunkIds: [trunk.sipTrunkId],
   },
 );
+  
+  console.log(`Created dispatch rule: ${dispatchRule.sipDispatchRuleId}`);
+}
 
 console.log(`
 ---
 Setup completed for your custom SIP trunk with LiveKit.
-Configuration set to only answer calls to: ${SPECIFIC_PHONE_NUMBER}
+Configuration:
+- Trunk accepts calls from Jambonz IP: 54.236.168.131
+- Trunk accepts calls TO number: 4991874350352 (without + prefix)
+- No authentication required
+- Calls routed to rooms with prefix: call-
 
-Make sure your \`.env.local\` file has all the required environment variables, including your OpenAI API key.
-
-Now you can run the command \`npm run agent\` and receive calls to ${SPECIFIC_PHONE_NUMBER} through your Schmidtkom SIP trunk.
+This trunk will NOT be deleted on subsequent runs.
 ---
 `);

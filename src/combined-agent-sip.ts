@@ -13,7 +13,13 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 
 app.get('/', (req, res) => {
-  res.send('LiveKit SIP Agent with Schmidtkom-Jambonz Integration - ACTIVE');
+  res.json({ 
+    status: 'ok', 
+    service: 'LiveKit SIP Agent',
+    agent: 'my-telephony-agent',
+    mode: 'telephony',
+    timestamp: new Date().toISOString() 
+  });
 });
 
 app.get('/health', (req, res) => {
@@ -40,6 +46,14 @@ app.get('/sip-config', (req, res) => {
   res.json(config);
 });
 
+// WebSocket handler (if needed for Heroku)
+app.get('/ws', (req, res) => {
+  res.json({ 
+    message: 'WebSocket endpoint - agent handles connections directly',
+    agent: 'my-telephony-agent'
+  });
+});
+
 // Start the web server
 app.listen(PORT, () => {
   console.log(`Web server is running on port ${PORT}`);
@@ -53,6 +67,7 @@ app.listen(PORT, () => {
   const agentPath = path.join(__dirname, 'agent.ts');
   console.log(`Starting LiveKit SIP agent from: ${agentPath}`);
   
+  // Use 'dev' mode for proper telephony support
   const agentProcess = exec(`npx tsx ${agentPath} dev`, (error, stdout, stderr) => {
     if (error) {
       console.error(`Agent process error: ${error.message}`);
@@ -76,6 +91,7 @@ app.listen(PORT, () => {
     console.log(`Agent process exited with code ${code}`);
   });
   
-  console.log('LiveKit SIP agent started in separate process');
+  console.log('LiveKit SIP telephony agent started in dev mode');
+  console.log('Agent name: my-telephony-agent');
   console.log('Ready to receive calls through Schmidtkom → Jambonz → LiveKit SIP pipeline');
 }); 

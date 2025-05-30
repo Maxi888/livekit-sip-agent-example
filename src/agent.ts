@@ -48,6 +48,13 @@ const roomServiceClient = new RoomServiceClient(
 export const agentDefinition = defineAgent({
   entry: async (ctx: JobContext) => {
     console.log('Agent entry point called, attempting to connect...');
+    console.log(`Job info: ${JSON.stringify({
+      id: ctx.job.id,
+      roomName: ctx.room.name,
+      metadata: ctx.job.metadata,
+      agentName: ctx.job.agentName,
+    })}`);
+    
     try {
       // Add logging for room information
       console.log(`Room name: ${ctx.room.name}`);
@@ -58,6 +65,17 @@ export const agentDefinition = defineAgent({
         console.log(`New participant connected: ${participant.identity}`);
         console.log(`Participant metadata: ${JSON.stringify(participant.metadata)}`);
         console.log(`Participant details: ${JSON.stringify(participant)}`);
+        
+        // Check if this is a SIP participant
+        const isSipParticipant = participant.attributes?.['sip.phoneNumber'] || 
+                                participant.attributes?.['sip.callID'] ||
+                                participant.identity?.includes('sip_') ||
+                                participant.identity?.includes('phone_');
+        
+        if (isSipParticipant) {
+          console.log('SIP participant detected!');
+          console.log(`SIP attributes: ${JSON.stringify(participant.attributes)}`);
+        }
         
         // Log any available methods or properties
         try {
@@ -85,7 +103,7 @@ export const agentDefinition = defineAgent({
       console.log('waiting for participant');
       
       const participant = await ctx.waitForParticipant();
-      console.log(`starting basic phone agent for ${participant.identity}`);
+      console.log(`starting telephony agent for ${participant.identity}`);
       console.log(`Participant info: ${JSON.stringify({
         identity: participant.identity,
         sid: participant.sid,
@@ -139,9 +157,15 @@ export const agentDefinition = defineAgent({
 
 // This is executed when the file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
+  // Run the agent with explicit dispatch for telephony
   cli.runApp(new WorkerOptions({
     agent: fileURLToPath(import.meta.url),
     agentName: 'my-telephony-agent',
+    // Ensure we're running in development mode for better logging
+    logLevel: 'debug',
+    // Add additional options to ensure proper telephony support
+    host: process.env.HOST || '0.0.0.0',
+    port: process.env.PORT ? parseInt(process.env.PORT) : undefined,
   }));
 }
 

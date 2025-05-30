@@ -1,0 +1,200 @@
+2025-05-23T14:25:15.499638+00:00 heroku[web.1]: Starting process with command `npm install && npx tsx src/combined-agent-twilio.ts`
+2025-05-23T14:25:17.002389+00:00 app[web.1]: 
+2025-05-23T14:25:17.002393+00:00 app[web.1]: up to date, audited 276 packages in 817ms
+2025-05-23T14:25:17.002422+00:00 app[web.1]: 
+2025-05-23T14:25:17.002439+00:00 app[web.1]: 63 packages are looking for funding
+2025-05-23T14:25:17.002451+00:00 app[web.1]: run `npm fund` for details
+2025-05-23T14:25:17.003356+00:00 app[web.1]: 
+2025-05-23T14:25:17.003357+00:00 app[web.1]: found 0 vulnerabilities
+2025-05-23T14:25:17.004668+00:00 app[web.1]: npm notice
+2025-05-23T14:25:17.004670+00:00 app[web.1]: npm notice New minor version of npm available! 11.3.0 -> 11.4.1
+2025-05-23T14:25:17.004670+00:00 app[web.1]: npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.1
+2025-05-23T14:25:17.004671+00:00 app[web.1]: npm notice To update run: npm install -g npm@11.4.1
+2025-05-23T14:25:17.004672+00:00 app[web.1]: npm notice
+2025-05-23T14:25:17.900719+00:00 app[web.1]: Environment variable TWILIO_ACCOUNT_SID is not set.
+2025-05-23T14:25:17.976458+00:00 heroku[web.1]: Process exited with status 1
+2025-05-23T14:25:17.997577+00:00 heroku[web.1]: State changed from starting to crashed
+2025-05-23T14:26:12.000000+00:00 app[api]: Build started by user maximilian.huber@malmachen.com
+2025-05-23T14:27:37.390804+00:00 app[api]: Deploy 9a539ffc by user maximilian.huber@malmachen.com
+2025-05-23T14:27:37.390804+00:00 app[api]: Release v43 created by user maximilian.huber@malmachen.com
+2025-05-23T14:27:39.000000+00:00 app[api]: Build succeeded
+2025-05-23T14:27:39.172461+00:00 heroku[web.1]: State changed from crashed to starting
+2025-05-23T14:27:44.113039+00:00 heroku[web.1]: Starting process with command `npm install && npx tsx src/combined-agent-sip.ts`
+2025-05-23T14:27:45.809195+00:00 app[web.1]: 
+2025-05-23T14:27:45.809258+00:00 app[web.1]: up to date, audited 276 packages in 966ms
+2025-05-23T14:27:45.809282+00:00 app[web.1]: 
+2025-05-23T14:27:45.809321+00:00 app[web.1]: 63 packages are looking for funding
+2025-05-23T14:27:45.809339+00:00 app[web.1]: run `npm fund` for details
+2025-05-23T14:27:45.810618+00:00 app[web.1]: 
+2025-05-23T14:27:45.810624+00:00 app[web.1]: found 0 vulnerabilities
+2025-05-23T14:27:45.812019+00:00 app[web.1]: npm notice
+2025-05-23T14:27:45.812027+00:00 app[web.1]: npm notice New minor version of npm available! 11.3.0 -> 11.4.1
+2025-05-23T14:27:45.812030+00:00 app[web.1]: npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.1
+2025-05-23T14:27:45.812030+00:00 app[web.1]: npm notice To update run: npm install -g npm@11.4.1
+2025-05-23T14:27:45.812031+00:00 app[web.1]: npm notice
+2025-05-23T14:27:46.677519+00:00 app[web.1]: Web server is running on port 55027
+2025-05-23T14:27:46.677532+00:00 app[web.1]: Configuration:
+2025-05-23T14:27:46.677613+00:00 app[web.1]: - LiveKit URL: wss://vocieagentpipelinetest-1z3kctsj.livekit.cloud
+2025-05-23T14:27:46.677666+00:00 app[web.1]: - SIP Username: livekit_client
+2025-05-23T14:27:46.677695+00:00 app[web.1]: - SIP Trunk URI: malmachen.sip.jambonz.cloud
+2025-05-23T14:27:46.677761+00:00 app[web.1]: - LiveKit SIP URI: sip:vocieagentpipelinetest-1z3kctsj.sip.livekit.cloud
+2025-05-23T14:27:46.677795+00:00 app[web.1]: Starting LiveKit SIP agent from: /app/src/agent.ts
+2025-05-23T14:27:46.688296+00:00 app[web.1]: LiveKit SIP agent started in separate process
+2025-05-23T14:27:46.688300+00:00 app[web.1]: Ready to receive calls through Schmidtkom → Jambonz → LiveKit SIP pipeline
+2025-05-23T14:27:46.853352+00:00 heroku[web.1]: State changed from starting to up
+2025-05-23T14:27:47.922127+00:00 app[web.1]: Agent: Agent starting with LiveKit URL: wss://vocieagentpipelinetest-1z3kctsj.livekit.cloud
+2025-05-23T14:27:47.922496+00:00 app[web.1]: Agent: SIP credentials configured: Username=livekit_client, Password=SET
+2025-05-23T14:27:47.922497+00:00 app[web.1]: SIP trunk URI: malmachen.sip.jambonz.cloud
+2025-05-23T14:27:48.128184+00:00 app[web.1]: Agent: [14:27:47.929] [32mINFO[39m (85): [36mstarting worker[39m
+2025-05-23T14:27:48.128186+00:00 app[web.1]: version: "0.1.0"
+2025-05-23T14:27:48.130293+00:00 app[web.1]: Agent: [14:27:47.987] [32mINFO[39m (85): [36mServer is listening on port 39051[39m
+2025-05-23T14:27:48.130294+00:00 app[web.1]: [14:27:48.041] [32mINFO[39m (85): [36mregistered worker[39m
+2025-05-23T14:27:48.130295+00:00 app[web.1]: version: "0.1.0"
+2025-05-23T14:27:48.130296+00:00 app[web.1]: id: "AW_9FVemkWBXKdz"
+2025-05-23T14:27:48.130296+00:00 app[web.1]: server_info: {
+2025-05-23T14:27:48.130297+00:00 app[web.1]: "edition": "Cloud",
+2025-05-23T14:27:48.130297+00:00 app[web.1]: "version": "1.8.4",
+2025-05-23T14:27:48.130297+00:00 app[web.1]: "protocol": 16,
+2025-05-23T14:27:48.130297+00:00 app[web.1]: "region": "UK",
+2025-05-23T14:27:48.130298+00:00 app[web.1]: "nodeId": "NC_OLONDON1B_yDPWzbbEnWgM",
+2025-05-23T14:27:48.130298+00:00 app[web.1]: "debugInfo": "",
+2025-05-23T14:27:48.130299+00:00 app[web.1]: "agentProtocol": 0
+2025-05-23T14:27:48.130299+00:00 app[web.1]: }
+2025-05-23T14:27:58.579604+00:00 heroku[router]: at=info method=GET path="/health" host=livekit-sip-agent-eu-68ef5104b68b.herokuapp.com request_id=f922fc6c-7494-4031-86e4-cb6c44a17265 fwd="91.106.123.187" dyno=web.1 connect=1ms service=7ms status=200 bytes=278 protocol=https
+2025-05-23T14:28:05.662738+00:00 heroku[router]: at=info method=GET path="/sip-config" host=livekit-sip-agent-eu-68ef5104b68b.herokuapp.com request_id=978735d4-7fb8-411e-84f7-572dd4e3fa23 fwd="91.106.123.187" dyno=web.1 connect=1ms service=1ms status=200 bytes=525 protocol=https
+2025-05-24T15:25:35.740657+00:00 heroku[web.1]: Cycling
+2025-05-24T15:25:35.742655+00:00 heroku[web.1]: State changed from up to starting
+2025-05-24T15:25:36.331232+00:00 heroku[web.1]: Stopping all processes with SIGTERM
+2025-05-24T15:25:36.428070+00:00 heroku[web.1]: Process exited with status 143
+2025-05-24T15:25:40.107330+00:00 heroku[web.1]: Starting process with command `npm install && npx tsx src/combined-agent-sip.ts`
+2025-05-24T15:25:41.582928+00:00 app[web.1]: 
+2025-05-24T15:25:41.582971+00:00 app[web.1]: up to date, audited 276 packages in 888ms
+2025-05-24T15:25:41.582974+00:00 app[web.1]: 
+2025-05-24T15:25:41.583000+00:00 app[web.1]: 63 packages are looking for funding
+2025-05-24T15:25:41.583014+00:00 app[web.1]: run `npm fund` for details
+2025-05-24T15:25:41.583950+00:00 app[web.1]: 
+2025-05-24T15:25:41.583951+00:00 app[web.1]: found 0 vulnerabilities
+2025-05-24T15:25:41.585006+00:00 app[web.1]: npm notice
+2025-05-24T15:25:41.585007+00:00 app[web.1]: npm notice New minor version of npm available! 11.3.0 -> 11.4.1
+2025-05-24T15:25:41.585008+00:00 app[web.1]: npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.1
+2025-05-24T15:25:41.585008+00:00 app[web.1]: npm notice To update run: npm install -g npm@11.4.1
+2025-05-24T15:25:41.585008+00:00 app[web.1]: npm notice
+2025-05-24T15:25:42.174248+00:00 app[web.1]: Web server is running on port 42209
+2025-05-24T15:25:42.174287+00:00 app[web.1]: Configuration:
+2025-05-24T15:25:42.174308+00:00 app[web.1]: - LiveKit URL: wss://vocieagentpipelinetest-1z3kctsj.livekit.cloud
+2025-05-24T15:25:42.174319+00:00 app[web.1]: - SIP Username: livekit_client
+2025-05-24T15:25:42.174333+00:00 app[web.1]: - SIP Trunk URI: malmachen.sip.jambonz.cloud
+2025-05-24T15:25:42.174337+00:00 app[web.1]: - LiveKit SIP URI: sip:vocieagentpipelinetest-1z3kctsj.sip.livekit.cloud
+2025-05-24T15:25:42.174355+00:00 app[web.1]: Starting LiveKit SIP agent from: /app/src/agent.ts
+2025-05-24T15:25:42.177882+00:00 app[web.1]: LiveKit SIP agent started in separate process
+2025-05-24T15:25:42.177906+00:00 app[web.1]: Ready to receive calls through Schmidtkom → Jambonz → LiveKit SIP pipeline
+2025-05-24T15:25:42.359160+00:00 heroku[web.1]: State changed from starting to up
+2025-05-24T15:25:43.061311+00:00 app[web.1]: Agent: Agent starting with LiveKit URL: wss://vocieagentpipelinetest-1z3kctsj.livekit.cloud
+2025-05-24T15:25:43.061492+00:00 app[web.1]: Agent: SIP credentials configured: Username=livekit_client, Password=SET
+2025-05-24T15:25:43.061492+00:00 app[web.1]: SIP trunk URI: malmachen.sip.jambonz.cloud
+2025-05-24T15:25:43.196023+00:00 app[web.1]: Agent: [15:25:43.067] [32mINFO[39m (85): [36mstarting worker[39m
+2025-05-24T15:25:43.196036+00:00 app[web.1]: version: "0.1.0"
+2025-05-24T15:25:43.197380+00:00 app[web.1]: Agent: [15:25:43.104] [32mINFO[39m (85): [36mServer is listening on port 45115[39m
+2025-05-24T15:25:43.197381+00:00 app[web.1]: [15:25:43.171] [32mINFO[39m (85): [36mregistered worker[39m
+2025-05-24T15:25:43.197381+00:00 app[web.1]: version: "0.1.0"
+2025-05-24T15:25:43.197383+00:00 app[web.1]: id: "AW_DD6oyf2WuhZh"
+2025-05-24T15:25:43.197383+00:00 app[web.1]: server_info: {
+2025-05-24T15:25:43.197383+00:00 app[web.1]: "edition": "Cloud",
+2025-05-24T15:25:43.197384+00:00 app[web.1]: "version": "1.8.4",
+2025-05-24T15:25:43.197384+00:00 app[web.1]: "protocol": 16,
+2025-05-24T15:25:43.197384+00:00 app[web.1]: "region": "UK",
+2025-05-24T15:25:43.197385+00:00 app[web.1]: "nodeId": "NC_OLONDON1B_4sVStrBVyMWy",
+2025-05-24T15:25:43.197385+00:00 app[web.1]: "debugInfo": "",
+2025-05-24T15:25:43.197385+00:00 app[web.1]: "agentProtocol": 0
+2025-05-24T15:25:43.197386+00:00 app[web.1]: }
+2025-05-25T16:08:47.804913+00:00 heroku[web.1]: Cycling
+2025-05-25T16:08:47.806689+00:00 heroku[web.1]: State changed from up to starting
+2025-05-25T16:08:48.486576+00:00 heroku[web.1]: Stopping all processes with SIGTERM
+2025-05-25T16:08:48.584220+00:00 heroku[web.1]: Process exited with status 143
+2025-05-25T16:08:52.191993+00:00 heroku[web.1]: Starting process with command `npm install && npx tsx src/combined-agent-sip.ts`
+2025-05-25T16:08:53.381333+00:00 app[web.1]: 
+2025-05-25T16:08:53.381376+00:00 app[web.1]: up to date, audited 276 packages in 664ms
+2025-05-25T16:08:53.381382+00:00 app[web.1]: 
+2025-05-25T16:08:53.381403+00:00 app[web.1]: 63 packages are looking for funding
+2025-05-25T16:08:53.381421+00:00 app[web.1]: run `npm fund` for details
+2025-05-25T16:08:53.382254+00:00 app[web.1]: 
+2025-05-25T16:08:53.382263+00:00 app[web.1]: found 0 vulnerabilities
+2025-05-25T16:08:53.383383+00:00 app[web.1]: npm notice
+2025-05-25T16:08:53.383384+00:00 app[web.1]: npm notice New minor version of npm available! 11.3.0 -> 11.4.1
+2025-05-25T16:08:53.383389+00:00 app[web.1]: npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.1
+2025-05-25T16:08:53.383390+00:00 app[web.1]: npm notice To update run: npm install -g npm@11.4.1
+2025-05-25T16:08:53.383390+00:00 app[web.1]: npm notice
+2025-05-25T16:08:53.962956+00:00 app[web.1]: Web server is running on port 26826
+2025-05-25T16:08:53.963005+00:00 app[web.1]: Configuration:
+2025-05-25T16:08:53.963032+00:00 app[web.1]: - LiveKit URL: wss://vocieagentpipelinetest-1z3kctsj.livekit.cloud
+2025-05-25T16:08:53.963033+00:00 app[web.1]: - SIP Username: livekit_client
+2025-05-25T16:08:53.963051+00:00 app[web.1]: - SIP Trunk URI: malmachen.sip.jambonz.cloud
+2025-05-25T16:08:53.963061+00:00 app[web.1]: - LiveKit SIP URI: sip:vocieagentpipelinetest-1z3kctsj.sip.livekit.cloud
+2025-05-25T16:08:53.963076+00:00 app[web.1]: Starting LiveKit SIP agent from: /app/src/agent.ts
+2025-05-25T16:08:53.966179+00:00 app[web.1]: LiveKit SIP agent started in separate process
+2025-05-25T16:08:53.966201+00:00 app[web.1]: Ready to receive calls through Schmidtkom → Jambonz → LiveKit SIP pipeline
+2025-05-25T16:08:54.399761+00:00 heroku[web.1]: State changed from starting to up
+2025-05-25T16:08:54.776443+00:00 app[web.1]: Agent: Agent starting with LiveKit URL: wss://vocieagentpipelinetest-1z3kctsj.livekit.cloud
+2025-05-25T16:08:54.776649+00:00 app[web.1]: Agent: SIP credentials configured: Username=livekit_client, Password=SET
+2025-05-25T16:08:54.776651+00:00 app[web.1]: SIP trunk URI: malmachen.sip.jambonz.cloud
+2025-05-25T16:08:54.903383+00:00 app[web.1]: Agent: [16:08:54.781] [32mINFO[39m (85): [36mstarting worker[39m
+2025-05-25T16:08:54.903385+00:00 app[web.1]: version: "0.1.0"
+2025-05-25T16:08:54.904750+00:00 app[web.1]: Agent: [16:08:54.815] [32mINFO[39m (85): [36mServer is listening on port 41919[39m
+2025-05-25T16:08:54.904751+00:00 app[web.1]: [16:08:54.880] [32mINFO[39m (85): [36mregistered worker[39m
+2025-05-25T16:08:54.904751+00:00 app[web.1]: version: "0.1.0"
+2025-05-25T16:08:54.904752+00:00 app[web.1]: id: "AW_bCKVBLL5xJ3x"
+2025-05-25T16:08:54.904752+00:00 app[web.1]: server_info: {
+2025-05-25T16:08:54.904752+00:00 app[web.1]: "edition": "Cloud",
+2025-05-25T16:08:54.904752+00:00 app[web.1]: "version": "1.8.4",
+2025-05-25T16:08:54.904753+00:00 app[web.1]: "protocol": 16,
+2025-05-25T16:08:54.904753+00:00 app[web.1]: "region": "UK",
+2025-05-25T16:08:54.904753+00:00 app[web.1]: "nodeId": "NC_OLONDON1B_4sVStrBVyMWy",
+2025-05-25T16:08:54.904759+00:00 app[web.1]: "debugInfo": "",
+2025-05-25T16:08:54.904759+00:00 app[web.1]: "agentProtocol": 0
+2025-05-25T16:08:54.904759+00:00 app[web.1]: }
+2025-05-26T16:46:26.454656+00:00 heroku[web.1]: Cycling
+2025-05-26T16:46:26.456540+00:00 heroku[web.1]: State changed from up to starting
+2025-05-26T16:46:27.032402+00:00 heroku[web.1]: Stopping all processes with SIGTERM
+2025-05-26T16:46:27.110362+00:00 heroku[web.1]: Process exited with status 143
+2025-05-26T16:46:30.840640+00:00 heroku[web.1]: Starting process with command `npm install && npx tsx src/combined-agent-sip.ts`
+2025-05-26T16:46:32.181799+00:00 app[web.1]: 
+2025-05-26T16:46:32.181842+00:00 app[web.1]: up to date, audited 276 packages in 758ms
+2025-05-26T16:46:32.181847+00:00 app[web.1]: 
+2025-05-26T16:46:32.181848+00:00 app[web.1]: 63 packages are looking for funding
+2025-05-26T16:46:32.181850+00:00 app[web.1]: run `npm fund` for details
+2025-05-26T16:46:32.182669+00:00 app[web.1]: 
+2025-05-26T16:46:32.182674+00:00 app[web.1]: found 0 vulnerabilities
+2025-05-26T16:46:32.183589+00:00 app[web.1]: npm notice
+2025-05-26T16:46:32.183592+00:00 app[web.1]: npm notice New minor version of npm available! 11.3.0 -> 11.4.1
+2025-05-26T16:46:32.183594+00:00 app[web.1]: npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.1
+2025-05-26T16:46:32.183594+00:00 app[web.1]: npm notice To update run: npm install -g npm@11.4.1
+2025-05-26T16:46:32.183594+00:00 app[web.1]: npm notice
+2025-05-26T16:46:32.754464+00:00 app[web.1]: Web server is running on port 24790
+2025-05-26T16:46:32.754515+00:00 app[web.1]: Configuration:
+2025-05-26T16:46:32.754545+00:00 app[web.1]: - LiveKit URL: wss://vocieagentpipelinetest-1z3kctsj.livekit.cloud
+2025-05-26T16:46:32.754560+00:00 app[web.1]: - SIP Username: livekit_client
+2025-05-26T16:46:32.754577+00:00 app[web.1]: - SIP Trunk URI: malmachen.sip.jambonz.cloud
+2025-05-26T16:46:32.754591+00:00 app[web.1]: - LiveKit SIP URI: sip:vocieagentpipelinetest-1z3kctsj.sip.livekit.cloud
+2025-05-26T16:46:32.754611+00:00 app[web.1]: Starting LiveKit SIP agent from: /app/src/agent.ts
+2025-05-26T16:46:32.758233+00:00 app[web.1]: LiveKit SIP agent started in separate process
+2025-05-26T16:46:32.758265+00:00 app[web.1]: Ready to receive calls through Schmidtkom → Jambonz → LiveKit SIP pipeline
+2025-05-26T16:46:33.055291+00:00 heroku[web.1]: State changed from starting to up
+2025-05-26T16:46:33.599594+00:00 app[web.1]: Agent: Agent starting with LiveKit URL: wss://vocieagentpipelinetest-1z3kctsj.livekit.cloud
+2025-05-26T16:46:33.599845+00:00 app[web.1]: Agent: SIP credentials configured: Username=livekit_client, Password=SET
+2025-05-26T16:46:33.599847+00:00 app[web.1]: SIP trunk URI: malmachen.sip.jambonz.cloud
+2025-05-26T16:46:33.739933+00:00 app[web.1]: Agent: [16:46:33.605] [32mINFO[39m (85): [36mstarting worker[39m
+2025-05-26T16:46:33.739936+00:00 app[web.1]: version: "0.1.0"
+2025-05-26T16:46:33.741283+00:00 app[web.1]: Agent: [16:46:33.640] [32mINFO[39m (85): [36mServer is listening on port 36555[39m
+2025-05-26T16:46:33.741284+00:00 app[web.1]: [16:46:33.703] [32mINFO[39m (85): [36mregistered worker[39m
+2025-05-26T16:46:33.741284+00:00 app[web.1]: version: "0.1.0"
+2025-05-26T16:46:33.741284+00:00 app[web.1]: id: "AW_TQLJREoMV8Un"
+2025-05-26T16:46:33.741284+00:00 app[web.1]: server_info: {
+2025-05-26T16:46:33.741285+00:00 app[web.1]: "edition": "Cloud",
+2025-05-26T16:46:33.741285+00:00 app[web.1]: "version": "1.8.4",
+2025-05-26T16:46:33.741285+00:00 app[web.1]: "protocol": 16,
+2025-05-26T16:46:33.741285+00:00 app[web.1]: "region": "UK",
+2025-05-26T16:46:33.741286+00:00 app[web.1]: "nodeId": "NC_OLONDON1B_4sVStrBVyMWy",
+2025-05-26T16:46:33.741286+00:00 app[web.1]: "debugInfo": "",
+2025-05-26T16:46:33.741286+00:00 app[web.1]: "agentProtocol": 0
+2025-05-26T16:46:33.741287+00:00 app[web.1]: }
+2025-05-26T19:51:26.290185+00:00 heroku[router]: at=info method=GET path="/health" host=livekit-sip-agent-eu-68ef5104b68b.herokuapp.com request_id=13d05303-58d5-459c-aa7f-1a0c21c4a062 fwd="91.106.123.187" dyno=web.1 connect=0ms service=122ms status=200 bytes=278 protocol=https
