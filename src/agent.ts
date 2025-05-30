@@ -163,9 +163,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     agentName: 'my-telephony-agent',
     // Ensure we're running in development mode for better logging
     logLevel: 'debug',
-    // Add additional options to ensure proper telephony support
-    host: process.env.HOST || '0.0.0.0',
-    port: process.env.PORT ? parseInt(process.env.PORT) : undefined,
+    // Don't specify host/port - let the framework handle it
   }));
 }
 
