@@ -55,25 +55,24 @@ export const agentDefinition = defineAgent({
       agentName: ctx.job.agentName,
     })}`);
     
-    // Log codec information if available
+    // Parse room metadata if it's a string
     const parsedMetadata = typeof ctx.room.metadata === 'string' ? 
       (() => { try { return JSON.parse(ctx.room.metadata); } catch { return {}; } })() : 
       ctx.room.metadata || {};
-    console.log(`Room codecs: ${JSON.stringify(parsedMetadata.codecs || 'not specified')}`);
+    
+    // Check for API-based calls
+    const isApiCall = ctx.room.name?.startsWith('call-') || 
+                     parsedMetadata.source === 'api-registration';
+    
+    if (isApiCall) {
+      console.log('📞 Detected API-based call');
+      console.log(`Room metadata: ${JSON.stringify(parsedMetadata)}`);
+    }
     
     try {
       // Add logging for room information
       console.log(`Room name: ${ctx.room.name}`);
       console.log(`Room metadata: ${JSON.stringify(ctx.room.metadata)}`);
-      
-      // Check if this is a Schmidtkom call
-      const isSchmidtkomCall = ctx.room.name?.includes('schmidtkom') || 
-                              parsedMetadata.carrier === 'schmidtkom' ||
-                              ctx.room.name?.startsWith('call-');
-      
-      if (isSchmidtkomCall) {
-        console.log('Detected Schmidtkom call - configuring for PCMU codec');
-      }
       
       // Listen for room events
       ctx.room.on('participantConnected', (participant) => {
@@ -85,25 +84,28 @@ export const agentDefinition = defineAgent({
         const isSipParticipant = participant.attributes?.['sip.phoneNumber'] || 
                                 participant.attributes?.['sip.callID'] ||
                                 participant.identity?.includes('sip_') ||
-                                participant.identity?.includes('phone_');
+                                participant.identity?.includes('phone_') ||
+                                participant.identity?.includes('+');
         
         if (isSipParticipant) {
-          console.log('SIP participant detected!');
+          console.log('✅ SIP participant detected!');
           console.log(`SIP attributes: ${JSON.stringify(participant.attributes)}`);
-        }
-        
-        // Log any available methods or properties
-        try {
-          console.log(`Participant properties: ${Object.keys(participant).join(', ')}`);
-        } catch (err) {
-          console.log(`Could not log participant properties: ${err}`);
+          
+          // Log API call specific details
+          if (isApiCall) {
+            console.log('📊 API Call Details:', {
+              callerId: participant.attributes?.['sip.callerId'],
+              toNumber: participant.attributes?.['sip.toNumber'],
+              carrier: participant.attributes?.['carrier'],
+            });
+          }
         }
       });
       
       ctx.room.on('connectionStateChanged', (state) => {
         console.log(`Room connection state changed: ${state}`);
       });
-      
+          
       // Add special logging for any events happening in the room
       ctx.room.on('trackPublished', (publication: any, participant: any) => {
         console.log(`Track published: ${publication.trackName || publication.source || 'unknown'} by ${participant.identity}`);
@@ -132,7 +134,7 @@ export const agentDefinition = defineAgent({
           If the caller asks you to perform tasks you cannot do, politely explain your limitations.`,
         apiKey: OPENAI_API_KEY,
       });
-
+      
       const fncCtx: llm.FunctionContext = {
         endCall: {
           description: 'End the call and delete the room',

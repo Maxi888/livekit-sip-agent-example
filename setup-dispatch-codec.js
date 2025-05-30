@@ -31,37 +31,31 @@ async function setupDispatchRuleWithCodec() {
     
     // Create new dispatch rule with codec preferences
     console.log('\nCreating new dispatch rule with codec support...');
-    const dispatchRule = await sipClient.createSipDispatchRuleIndividual({
-      rule: {
-        // Dispatch to rooms with 'call-' prefix
+    const dispatchRule = await sipClient.createSipDispatchRule(
+      {
+        // Use individual dispatch with room prefix
+        type: 'individual',
         roomPrefix: 'call-',
-        pin: '',
-      },
-      name: 'telephony-agent-dispatch-codec',
-      metadata: JSON.stringify({ 
-        agentName: 'my-telephony-agent',
-        carrier: 'schmidtkom',
-        codecPreference: 'PCMU'
-      }),
-      attributes: {
-        // Set room configuration for the agent
+        // IMPORTANT: Specify the agent and codec configuration
         roomConfig: {
           agents: [{
-            agentName: 'my-telephony-agent',
-            agentParams: JSON.stringify({
-              language: 'de-DE',
-              codec_preference: 'PCMU',
-              sample_rate: 8000
-            })
+            agentName: 'my-telephony-agent'
           }],
-          // Room metadata
           metadata: JSON.stringify({
             carrier: 'schmidtkom',
             codecs: ['PCMU', 'PCMA', 'telephone-event']
           })
         }
+      },
+      {
+        name: 'telephony-agent-dispatch-codec',
+        metadata: JSON.stringify({ 
+          agentName: 'my-telephony-agent',
+          carrier: 'schmidtkom',
+          codecPreference: 'PCMU'
+        }),
       }
-    });
+    );
     
     console.log('\n✅ Dispatch rule created successfully!');
     console.log('Rule ID:', dispatchRule.sipDispatchRuleId);
