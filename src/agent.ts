@@ -55,10 +55,25 @@ export const agentDefinition = defineAgent({
       agentName: ctx.job.agentName,
     })}`);
     
+    // Log codec information if available
+    const parsedMetadata = typeof ctx.room.metadata === 'string' ? 
+      (() => { try { return JSON.parse(ctx.room.metadata); } catch { return {}; } })() : 
+      ctx.room.metadata || {};
+    console.log(`Room codecs: ${JSON.stringify(parsedMetadata.codecs || 'not specified')}`);
+    
     try {
       // Add logging for room information
       console.log(`Room name: ${ctx.room.name}`);
       console.log(`Room metadata: ${JSON.stringify(ctx.room.metadata)}`);
+      
+      // Check if this is a Schmidtkom call
+      const isSchmidtkomCall = ctx.room.name?.includes('schmidtkom') || 
+                              parsedMetadata.carrier === 'schmidtkom' ||
+                              ctx.room.name?.startsWith('call-');
+      
+      if (isSchmidtkomCall) {
+        console.log('Detected Schmidtkom call - configuring for PCMU codec');
+      }
       
       // Listen for room events
       ctx.room.on('participantConnected', (participant) => {
