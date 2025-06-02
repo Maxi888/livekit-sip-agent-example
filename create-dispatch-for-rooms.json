@@ -1,0 +1,9 @@
+{
+  "rule": {
+    "room": "call-*",
+    "pin": "",
+    "agentInfoList": [{
+      "agentName": "my-telephony-agent"
+    }]
+  }
+} 

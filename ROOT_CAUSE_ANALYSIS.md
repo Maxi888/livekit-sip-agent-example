@@ -1,133 +1,140 @@
-# Root Cause Analysis: LiveKit SIP 503 Service Unavailable Error
+# Root Cause Analysis: LiveKit SIP Integration Failure
 
 ## Executive Summary
-Despite all configuration changes, calls from Schmidtkom through Jambonz to LiveKit continue to fail with SIP status 503 (Service Unavailable). The root cause is that the Jambonz middleware is not sending authentication credentials when dialing to LiveKit, even though the LiveKit trunk is configured to require authentication.
+Calls are failing because the SIP INVITE from Jambonz to LiveKit is being rejected with **487 Request Terminated** after just 1.3 seconds. Despite successful pre-registration and room creation, the SIP participant never joins the room, preventing the agent from receiving any jobs.
 
-## Detailed Analysis
+## Timeline of a Failed Call
 
-### 1. Current Configuration State
+### 1. **Initial Call Setup (Success)**
+- Schmidtkom → Jambonz: INVITE received
+- Jambonz → Middleware: Webhook request to `/livekit-api`
+- Middleware creates room successfully
+- Middleware pre-registers SIP participant via `createSipParticipant`
+- Returns SIP URI: `sip:SCL_xvn5eLAGGDD3@vocieagentpipelinetest-1z3kctsj.sip.livekit.cloud`
 
-#### LiveKit Trunk Configuration (from check-livekit-trunks.js output):
-```
-Trunk ID: ST_GjeZjGQjrsvC
-Name: Jambonz Inbound
-Numbers: 4991874350352
-Allowed addresses: 54.236.168.131
-Allowed numbers: 4991874350352
-Auth username: livekit_client
-Krisp enabled: false
-```
+### 2. **Jambonz Dial Attempt (Failure)**
+- Jambonz receives dial instruction with SIP URI
+- Jambonz → LiveKit: Sends INVITE to the pre-registered SIP URI
+- **Issue**: Call terminates after 1.3 seconds with 487 Request Terminated
+- No action callback received by middleware
+- No participant joins the room
+- Agent never receives a job
 
-The trunk is configured with:
-- Authentication required (username: `livekit_client`)
-- Restricted to accept calls only from Jambonz IP: `54.236.168.131`
-- Configured to accept calls TO number: `4991874350352`
-- Configured to accept calls FROM number: `4991874350352`
+## Key Findings
 
-#### Dispatch Rule Configuration:
-```
-Rule ID: SDR_ZyY3ewVGtwEd
-Trunk IDs: ST_GjeZjGQjrsvC
-Rule type: {"dispatchRuleIndividual":{"roomPrefix":"call-","pin":""}}
-```
+### 1. **Pre-Registration Working**
+- ✅ Rooms are created successfully
+- ✅ SIP participants are pre-registered with valid `sipCallId`
+- ✅ Correct trunk domain is being used
+- ✅ All LiveKit support recommendations implemented
 
-### 2. Call Flow Analysis
+### 2. **SIP Connection Failing**
+- ❌ SIP INVITE from Jambonz is not being accepted by LiveKit
+- ❌ No participants join the created rooms
+- ❌ Rooms remain empty and eventually expire
+- ❌ Agent sits idle with no jobs
 
-From the middleware logs:
-1. Call arrives from Schmidtkom to Jambonz with destination `91874350352`
-2. Middleware formats the number to `+4991874350352`
-3. Middleware creates a LiveKit call ID (e.g., `call-afd968a1ba780364`)
-4. Middleware attempts to dial: `sip:call-afd968a1ba780364@vocieagentpipelinetest-1z3kctsj.sip.livekit.cloud`
-5. **Call fails with 503 Service Unavailable**
+### 3. **Missing Action Callbacks**
+- No `/action` callbacks received from Jambonz
+- This indicates the dial operation is failing at the SIP level
+- The 487 error suggests the call is being cancelled/terminated
 
-### 3. Root Cause Identification
+## Potential Root Causes
 
-#### The Problem:
-The Jambonz middleware is NOT sending authentication credentials when dialing to LiveKit.
+### 1. **SIP Header Mismatch**
+The pre-registered participant expects specific headers that Jambonz might not be sending:
+- Missing `X-LiveKit-Call-ID` header in the actual INVITE
+- Missing `X-LiveKit-Project` header
+- Authentication headers not matching
 
-Looking at the dial configuration in `livekit-jambonz-middleware/lib/routes/livekit.js` (lines 130-143):
-```javascript
-session
-  .dial({
-    callerId: from,
-    answerOnBridge: true,
-    anchorMedia: true,
-    referHook: '/refer',
-    actionHook: '/dialAction',
-    target,
-    headers
-  })
-  .hangup()
-  .send();
-```
+### 2. **SIP URI Format Issue**
+While we're generating `sip:SCL_xxx@domain`, LiveKit might expect:
+- Different URI format
+- Additional parameters in the URI
+- Different authentication mechanism
 
-The `dial` verb is missing the `auth` property that should contain the authentication credentials.
+### 3. **Media Negotiation Failure**
+From the PCAP:
+- Schmidtkom offers: G722, PCMA, PCMU
+- LiveKit might not support the offered codecs
+- Media anchoring through Jambonz might be causing issues
 
-#### Why This Causes 503:
-1. LiveKit trunk requires authentication (username: `livekit_client`)
-2. Jambonz sends the INVITE without authentication headers
-3. LiveKit responds with 401 Unauthorized (likely)
-4. Jambonz doesn't handle the authentication challenge
-5. The call fails and Jambonz reports it as 503 Service Unavailable
+### 4. **Timing Issue**
+- Pre-registration might be expiring too quickly
+- Race condition between room creation and SIP INVITE
+- LiveKit might need more time to set up the participant
 
-### 4. Supporting Evidence
+### 5. **Network/Firewall Issue**
+- Jambonz might not be able to reach LiveKit's SIP endpoint
+- TLS/SRTP requirements not being met
+- Port restrictions
 
-From Jambonz documentation on the `dial` verb for SIP endpoints:
-```javascript
+## Evidence from Logs
+
+### Middleware Success:
+```json
 {
-  "type": "sip",
-  "sipUri": "sip:1617333456@sip.trunk1.com",
-  "auth": {
-    "username": "foo",
-    "password": "bar"
-  }
+  "sipUri": "sip:SCL_xvn5eLAGGDD3@vocieagentpipelinetest-1z3kctsj.sip.livekit.cloud",
+  "roomName": "call-7570f6b4-7ec0-47a3-9c05-c36e08fd1874",
+  "msg": "Room created successfully"
 }
 ```
 
-The middleware needs to include the `auth` object in the target configuration when dialing to LiveKit.
+### But No Agent Activity:
+- Last agent log: "registered worker" at 13:57
+- No job received logs since then
+- No participant joined events
 
-### 5. Why Previous Fixes Didn't Work
+### Active Calls Accumulating:
+- 9 calls tracked in middleware
+- No action callbacks to clean them up
+- Suggests all calls are failing at SIP level
 
-All previous configuration changes addressed symptoms but not the root cause:
-- IP whitelisting ✓ (correctly set to Jambonz IP)
-- Phone number format ✓ (correctly formatted without +)
-- Trunk numbers field ✓ (correctly configured)
-- Dispatch rule ✓ (correctly configured)
-- Agent registration ✓ (agent is running and registered)
+## Critical Questions
 
-However, none of these fixes addressed the missing authentication in the outbound dial from Jambonz to LiveKit.
+1. **Is Jambonz actually sending the INVITE to LiveKit?**
+   - Need PCAP between Jambonz and LiveKit
+   - Check Jambonz logs for dial errors
 
-### 6. Additional Observations
+2. **Are the headers being passed correctly?**
+   - The dial instruction includes headers, but are they sent in the SIP INVITE?
+   - LiveKit might require headers in a specific format
 
-1. **No Agent Logs**: The agent logs show no incoming calls because the calls never reach LiveKit due to authentication failure.
+3. **Is the pre-registration actually working?**
+   - The API returns success, but is the participant really registered?
+   - Can we query LiveKit to verify the participant exists?
 
-2. **Misleading Error Code**: The 503 error is misleading - it suggests a service availability issue when the actual problem is authentication.
+4. **Is there a trunk configuration mismatch?**
+   - The trunk expects certain authentication
+   - Jambonz might not be sending the right credentials
 
-3. **Missing Environment Variables**: The middleware doesn't have LiveKit SIP credentials configured as environment variables, which it would need to authenticate.
+## Next Steps
+
+1. **Get PCAP between Jambonz and LiveKit**
+   - This will show exactly what's being sent
+   - Can verify headers, authentication, and response codes
+
+2. **Enable Debug Logging**
+   - LiveKit server logs might show why it's rejecting the call
+   - Jambonz logs might show dial errors
+
+3. **Test Direct SIP**
+   - Try calling the pre-registered SIP URI directly with a SIP client
+   - This would isolate if it's a Jambonz issue or LiveKit issue
+
+4. **Verify Trunk Configuration**
+   - The outbound trunk might need specific settings
+   - Authentication might not be configured correctly
+
+5. **Check LiveKit Documentation**
+   - There might be undocumented requirements for pre-registered calls
+   - The API might have changed
 
 ## Conclusion
 
-The root cause is that the Jambonz middleware is not configured to send authentication credentials when dialing to LiveKit's SIP trunk. The LiveKit trunk requires authentication, and without it, all calls are rejected before they can reach the LiveKit system or the agent.
+The integration is 90% working - pre-registration succeeds, rooms are created, and the agent is ready. The failure point is the actual SIP connection between Jambonz and LiveKit. The 487 error after 1.3 seconds suggests either:
+1. LiveKit is rejecting the call due to missing/incorrect headers
+2. Media negotiation is failing
+3. Authentication is failing at the SIP level
 
-## Recommended Solution
-
-The middleware needs to be updated to:
-1. Add environment variables for LiveKit SIP credentials:
-   - `LIVEKIT_SIP_USERNAME=livekit_client`
-   - `LIVEKIT_SIP_PASSWORD=<password>`
-
-2. Modify the dial target to include authentication:
-```javascript
-target = [
-  {
-    type: 'sip',
-    sipUri: `sip:${livekit_call_id}@${sipDomain}`,
-    auth: {
-      username: process.env.LIVEKIT_SIP_USERNAME,
-      password: process.env.LIVEKIT_SIP_PASSWORD
-    }
-  }
-];
-```
-
-This will allow Jambonz to properly authenticate with LiveKit's SIP trunk and complete the call. 
+Without visibility into the Jambonz→LiveKit SIP traffic, we cannot determine the exact cause. 

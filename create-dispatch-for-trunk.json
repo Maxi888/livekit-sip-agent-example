@@ -1,0 +1,8 @@
+{
+  "rule": {
+    "trunkIds": ["ST_7LkjVwjB54ps"],
+    "agentInfoList": [{
+      "agentName": "my-telephony-agent"
+    }]
+  }
+} 

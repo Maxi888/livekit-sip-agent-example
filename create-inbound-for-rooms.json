@@ -1,0 +1,8 @@
+{
+  "trunk": {
+    "name": "rooms-inbound",
+    "numbers": ["+4991874350352", "91874350352", "4991874350352"],
+    "authUsername": "livekit_client",
+    "authPassword": "syzhod-2xasMe-wumrag"
+  }
+} 

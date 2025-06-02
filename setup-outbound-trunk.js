@@ -24,26 +24,16 @@ async function setupOutboundTrunk() {
     const existingTrunk = trunks.find(t => t.name === 'api-outbound-trunk');
     if (existingTrunk) {
       console.log(`Deleting existing trunk: ${existingTrunk.sipTrunkId}`);
-      await sipClient.deleteSipTrunk({ sipTrunkId: existingTrunk.sipTrunkId });
+      await sipClient.deleteSipTrunk(existingTrunk.sipTrunkId);
     }
     
     // Create new outbound trunk for API-based calls
     console.log('\nCreating new outbound trunk...');
-    const trunk = await sipClient.createSipOutboundTrunk({
-      trunk: {
-        name: 'api-outbound-trunk',
-        // This is a dummy address since we're using the API approach
-        // The actual routing happens via call_id in the SIP URI
-        address: '5t4n6j0wnrl.sip.livekit.cloud',
-        numbers: ['+4991874350352', '91874350352', '4991874350352'],
-        transport: 'AUTO',
-        // Headers for Schmidtkom compatibility
-        headers: {
-          'X-Carrier': 'schmidtkom',
-          'X-LiveKit-Source': 'api-registration'
-        }
-      }
-    });
+    const trunk = await sipClient.createSipOutboundTrunk(
+      'api-outbound-trunk',  // name
+      'vocieagentpipelinetest-1z3kctsj.sip.livekit.cloud',  // address - YOUR domain
+      ['+4991874350352', '91874350352', '4991874350352']  // numbers
+    );
     
     console.log('\n✅ Outbound trunk created successfully!');
     console.log(`Trunk ID: ${trunk.sipTrunkId}`);
@@ -57,13 +47,13 @@ async function setupOutboundTrunk() {
     const inboundTrunks = await sipClient.listSipInboundTrunk();
     for (const inTrunk of inboundTrunks) {
       console.log(`Deleting inbound trunk: ${inTrunk.name} (${inTrunk.sipTrunkId})`);
-      await sipClient.deleteSipTrunk({ sipTrunkId: inTrunk.sipTrunkId });
+      await sipClient.deleteSipTrunk(inTrunk.sipTrunkId);
     }
     
     const dispatchRules = await sipClient.listSipDispatchRule();
     for (const rule of dispatchRules) {
       console.log(`Deleting dispatch rule: ${rule.name} (${rule.sipDispatchRuleId})`);
-      await sipClient.deleteSipDispatchRule({ sipDispatchRuleId: rule.sipDispatchRuleId });
+      await sipClient.deleteSipDispatchRule(rule.sipDispatchRuleId);
     }
     
     console.log('\n✅ Cleanup complete!');

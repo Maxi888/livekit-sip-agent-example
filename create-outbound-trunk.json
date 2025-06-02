@@ -1,0 +1,7 @@
+{
+  "trunk": {
+    "name": "api-outbound-trunk",
+    "address": "5t4n6j0wnrl.sip.livekit.cloud",
+    "numbers": ["+4991874350352", "91874350352", "4991874350352"]
+  }
+} 

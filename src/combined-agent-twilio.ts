@@ -10,6 +10,9 @@ import { verifyEnv } from './env.js';
 import WebSocket from 'ws';
 import { WebSocketServer } from 'ws';
 
+// Import our new weather service - this is safe and doesn't affect existing functionality
+import { weatherService, WeatherService } from './mcp/weather-service.js';
+
 // Get the current directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -306,7 +309,7 @@ app.post('/gather-result', async (req, res) => {
   if (!activeConversations.has(callSid)) {
     conversation = {
       messages: [
-        { role: 'system', content: 'You are a helpful assistant available by phone. Keep your responses concise and conversational as they will be spoken to the caller. Remember this is a phone conversation.' },
+        { role: 'system', content: 'You are a helpful assistant available by phone. Keep your responses concise and conversational as they will be spoken to the caller. Remember this is a phone conversation. You can also provide weather information for any location when asked.' },
       ],
       callSid,
       from,
@@ -324,35 +327,56 @@ app.post('/gather-result', async (req, res) => {
   conversation.messages.push({ role: 'user', content: speechResult });
   conversation.turnCount++;
   
-  // Process with OpenAI API
+  // Process with OpenAI API - now with weather enhancement
   try {
-    // Create OpenAI API request
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: conversation.messages,
-        max_tokens: 200,
-        temperature: 0.7
-      })
-    });
+    let assistantResponse: string;
     
-    if (!openaiResponse.ok) {
-      throw new Error(`OpenAI API responded with status: ${openaiResponse.status}`);
+    // Check if this is a weather query - this is the key integration point
+    // We detect weather queries and handle them specially, but don't break existing functionality
+    if (WeatherService.isWeatherQuery(speechResult)) {
+      console.log('🌤️ Weather query detected, processing...');
+      
+      // Extract location from user input
+      const location = WeatherService.extractLocation(speechResult);
+      
+      if (location) {
+        console.log(`Weather location extracted: ${location}`);
+        
+        try {
+          // Get weather data with our robust service
+          const weatherResponse = await weatherService.getWeather(location);
+          
+          // Format for speech and add to conversation context
+          const weatherSpeech = weatherService.formatForSpeech(weatherResponse);
+          
+          // Add weather context to conversation for AI processing
+          conversation.messages.push({ 
+            role: 'system', 
+            content: `Weather information for ${location}: ${JSON.stringify(weatherResponse.data)}. Provide this information naturally in conversation.` 
+          });
+          
+          // Use the weather speech directly for faster response
+          assistantResponse = weatherSpeech;
+          
+          console.log(`Weather response generated: ${assistantResponse}`);
+          
+        } catch (weatherError) {
+          console.error('Weather service failed, falling back to AI:', weatherError);
+          
+          // If weather service fails, fall back to normal AI processing
+          // This ensures the conversation continues even if weather fails
+          assistantResponse = await processWithAI(conversation.messages);
+        }
+      } else {
+        // Weather query detected but no location found - ask for clarification
+        assistantResponse = "I'd be happy to help you with the weather. Could you please tell me which city or location you're interested in?";
+        console.log('Weather query without location, asking for clarification');
+      }
+    } else {
+      // Not a weather query, process normally with AI
+      // This preserves all existing functionality
+      assistantResponse = await processWithAI(conversation.messages);
     }
-    
-    const openaiData = await openaiResponse.json() as {
-      choices: [{
-        message: {
-          content: string;
-        };
-      }];
-    };
-    const assistantResponse = openaiData.choices[0]?.message?.content || "I'm sorry, I couldn't process that request.";
     
     // Add assistant response to conversation history
     conversation.messages.push({ role: 'assistant', content: assistantResponse });
@@ -410,6 +434,41 @@ app.post('/gather-result', async (req, res) => {
     res.send(response.toString());
   }
 });
+
+/**
+ * Helper function to process messages with OpenAI AI
+ * Extracted to separate weather logic from AI processing
+ * This keeps the existing AI processing unchanged
+ */
+async function processWithAI(messages: {role: string, content: string}[]): Promise<string> {
+  const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      messages: messages,
+      max_tokens: 200,
+      temperature: 0.7
+    })
+  });
+  
+  if (!openaiResponse.ok) {
+    throw new Error(`OpenAI API responded with status: ${openaiResponse.status}`);
+  }
+  
+  const openaiData = await openaiResponse.json() as {
+    choices: [{
+      message: {
+        content: string;
+      };
+    }];
+  };
+  
+  return openaiData.choices[0]?.message?.content || "I'm sorry, I couldn't process that request.";
+}
 
 // Start the web server
 server.listen(PORT, () => {

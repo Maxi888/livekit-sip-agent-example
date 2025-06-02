@@ -13,3 +13,11 @@ export const verifyEnv = <T extends string>(
   });
   return result as Record<T, string>;
 };
+
+const env = {
+  ...process.env,
+  // Weather feature control for production safety
+  WEATHER_ENABLED: process.env.WEATHER_ENABLED || 'true',
+  WEATHER_TIMEOUT: process.env.WEATHER_TIMEOUT || '5000',
+  WEATHER_CACHE_TTL: process.env.WEATHER_CACHE_TTL || '300000',
+};

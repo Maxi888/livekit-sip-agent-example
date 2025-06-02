@@ -1,0 +1,8 @@
+{
+  "rule": {
+    "sipTrunks": ["ST_7LkjVwjB54ps"],
+    "agentInfo": {
+      "agentName": "my-telephony-agent"
+    }
+  }
+} 
