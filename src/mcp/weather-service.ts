@@ -237,17 +237,17 @@ export class WeatherService {
    */
   formatForSpeech(response: WeatherResponse): string {
     if (!response.success || !response.data) {
-      return "I'm sorry, I couldn't get the weather information right now. Please try again later.";
+      return "Es tut mir leid, ich konnte die Wetterinformationen gerade nicht abrufen. Bitte versuchen Sie es später erneut.";
     }
 
     const { location, temperature, description } = response.data;
     
-    // Format temperature and description for natural speech
-    let speech = `The weather in ${location} is currently ${temperature} degrees Celsius with ${description.toLowerCase()}.`;
+    // Format temperature and description for natural speech in German
+    let speech = `Das Wetter in ${location} ist derzeit ${temperature} Grad Celsius mit ${description.toLowerCase()}.`;
     
     // Add additional details if available
     if (response.data.humidity) {
-      speech += ` The humidity is ${response.data.humidity} percent.`;
+      speech += ` Die Luftfeuchtigkeit beträgt ${response.data.humidity} Prozent.`;
     }
     
     return speech;
@@ -258,8 +258,10 @@ export class WeatherService {
    */
   static isWeatherQuery(input: string): boolean {
     const weatherKeywords = [
+      'wetter', 'temperatur', 'vorhersage', 'regen', 'sonnig', 'bewölkt',
+      'heiß', 'kalt', 'grad', 'klima', 'luftfeuchtigkeit', 'wind',
       'weather', 'temperature', 'forecast', 'rain', 'sunny', 'cloudy',
-      'hot', 'cold', 'degrees', 'climate', 'humidity', 'wind'
+      'hot', 'cold', 'degrees', 'climate', 'humidity'
     ];
     
     const lowerInput = input.toLowerCase();
@@ -267,17 +269,18 @@ export class WeatherService {
   }
 
   /**
-   * Extract location from user input
+   * Extract location from user input (supports German and English patterns)
    */
   static extractLocation(input: string): string | null {
-    // Simple patterns to extract location
-    // "weather in London" -> "London"
-    // "temperature in New York" -> "New York"
-    // "how's the weather in Berlin" -> "Berlin"
+    // German and English patterns to extract location
+    // "wetter in Berlin" -> "Berlin"
+    // "temperatur in München" -> "München"
+    // "wie ist das wetter in Hamburg" -> "Hamburg"
     
     const patterns = [
-      /(?:weather|temperature|forecast).*?(?:in|for|at)\s+([a-zA-Z\s,]+?)(?:\s|$|\?)/i,
-      /(?:in|for|at)\s+([a-zA-Z\s,]+?)(?:\s+(?:weather|temperature|forecast))/i,
+      /(?:wetter|temperatur|vorhersage).*?(?:in|für|von)\s+([a-zA-ZäöüÄÖÜß\s,]+?)(?:\s|$|\?)/i,
+      /(?:weather|temperature|forecast).*?(?:in|for|at)\s+([a-zA-ZäöüÄÖÜß\s,]+?)(?:\s|$|\?)/i,
+      /(?:in|für|von|for|at)\s+([a-zA-ZäöüÄÖÜß\s,]+?)(?:\s+(?:wetter|temperatur|vorhersage|weather|temperature|forecast))/i,
     ];
     
     for (const pattern of patterns) {
@@ -289,11 +292,11 @@ export class WeatherService {
     
     // If no pattern matches, look for city-like words after common prepositions
     const words = input.split(' ');
-    const inIndex = words.findIndex(word => /^(in|for|at)$/i.test(word));
+    const inIndex = words.findIndex(word => /^(in|für|von|for|at)$/i.test(word));
     if (inIndex !== -1 && inIndex < words.length - 1) {
       // Take next 1-3 words as potential location
       const locationWords = words.slice(inIndex + 1, inIndex + 4);
-      return locationWords.join(' ').replace(/[^\w\s]/g, '').trim();
+      return locationWords.join(' ').replace(/[^\wäöüÄÖÜß\s]/g, '').trim();
     }
     
     return null;

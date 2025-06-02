@@ -212,7 +212,7 @@ app.post('/twilio-webhook', async (req, res) => {
     const response = new VoiceResponse();
     
     // Add a voice prompt and gather input for the first turn
-    response.say('Hello, thank you for calling. I am an AI assistant. How can I help you today?');
+    response.say('Hallo, vielen Dank für Ihren Anruf. Ich bin ein KI-Assistent. Wie kann ich Ihnen heute helfen?');
     
     // Create a gather with input type speech
     const gather = response.gather({
@@ -221,11 +221,11 @@ app.post('/twilio-webhook', async (req, res) => {
       speechModel: 'phone_call',
       action: `https://livekit-sip-agent-eu-68ef5104b68b.herokuapp.com/gather-result?room=${roomName}`,
       method: 'POST',
-      language: 'en-US'
+      language: 'de-DE'
     });
     
     // Add a backup say command in case the gather times out
-    response.say('I did not hear anything. Please try calling again.');
+    response.say('Ich habe nichts gehört. Bitte versuchen Sie es später erneut.');
     response.hangup();
     
     // Set response content type
@@ -309,7 +309,7 @@ app.post('/gather-result', async (req, res) => {
   if (!activeConversations.has(callSid)) {
     conversation = {
       messages: [
-        { role: 'system', content: 'You are a helpful assistant available by phone. Keep your responses concise and conversational as they will be spoken to the caller. Remember this is a phone conversation. You can also provide weather information for any location when asked.' },
+        { role: 'system', content: 'Du bist ein hilfreicher Assistent, der telefonisch erreichbar ist. Halte deine Antworten prägnant und gesprächig, da sie dem Anrufer vorgesprochen werden. Denke daran, dass dies ein Telefongespräch ist. Du kannst auch Wetterinformationen für jeden Ort bereitstellen, wenn danach gefragt wird. Antworte immer auf Deutsch.' },
       ],
       callSid,
       from,
@@ -369,7 +369,7 @@ app.post('/gather-result', async (req, res) => {
         }
       } else {
         // Weather query detected but no location found - ask for clarification
-        assistantResponse = "I'd be happy to help you with the weather. Could you please tell me which city or location you're interested in?";
+        assistantResponse = "Gerne helfe ich Ihnen mit dem Wetter. Könnten Sie mir bitte sagen, für welche Stadt oder welchen Ort Sie sich interessieren?";
         console.log('Weather query without location, asking for clarification');
       }
     } else {
@@ -389,12 +389,17 @@ app.post('/gather-result', async (req, res) => {
     // Exit conversation after too many turns or if user says goodbye
     const isGoodbye = speechResult.toLowerCase().includes('goodbye') || 
                        speechResult.toLowerCase().includes('bye') ||
-                       speechResult.toLowerCase().includes('thank you');
+                       speechResult.toLowerCase().includes('thank you') ||
+                       speechResult.toLowerCase().includes('auf wiedersehen') ||
+                       speechResult.toLowerCase().includes('wiedersehen') ||
+                       speechResult.toLowerCase().includes('tschüss') ||
+                       speechResult.toLowerCase().includes('danke') ||
+                       speechResult.toLowerCase().includes('vielen dank');
     
     if (conversation.turnCount >= 10 || isGoodbye) {
       // End the conversation
       response.say(assistantResponse);
-      response.say('Thank you for calling. Goodbye!');
+      response.say('Vielen Dank für Ihren Anruf. Auf Wiederhören!');
       response.hangup();
       
       // Cleanup the conversation
@@ -410,11 +415,11 @@ app.post('/gather-result', async (req, res) => {
         speechModel: 'phone_call',
         action: `https://livekit-sip-agent-eu-68ef5104b68b.herokuapp.com/gather-result?room=${roomName}`,
         method: 'POST',
-        language: 'en-US'
+        language: 'de-DE'
       });
       
       // Add a timeout fallback
-      response.say('I didn\'t hear anything. Thank you for calling. Goodbye!');
+      response.say('Ich habe nichts gehört. Vielen Dank für Ihren Anruf. Auf Wiederhören!');
       response.hangup();
     }
     
@@ -427,7 +432,7 @@ app.post('/gather-result', async (req, res) => {
     
     // Handle failure gracefully
     const response = new VoiceResponse();
-    response.say('I apologize, but I encountered an issue processing your request. Please try again later.');
+    response.say('Entschuldigung, es ist ein Problem bei der Verarbeitung Ihrer Anfrage aufgetreten. Bitte versuchen Sie es später erneut.');
     response.hangup();
     
     res.setHeader('Content-Type', 'text/xml');
@@ -467,7 +472,7 @@ async function processWithAI(messages: {role: string, content: string}[]): Promi
     }];
   };
   
-  return openaiData.choices[0]?.message?.content || "I'm sorry, I couldn't process that request.";
+  return openaiData.choices[0]?.message?.content || "Entschuldigung, ich konnte diese Anfrage nicht bearbeiten.";
 }
 
 // Start the web server
