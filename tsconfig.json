@@ -5,10 +5,16 @@
     "outDir": "dist",
     "module": "NodeNext",
     "target": "es2022",
-    "moduleResolution": "nodenext"
+    "moduleResolution": "nodenext",
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true
   },
   "include": [
     "src/**/*.ts",
     "test/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
   ]
 }
