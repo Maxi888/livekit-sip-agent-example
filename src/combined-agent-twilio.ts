@@ -212,7 +212,10 @@ app.post('/twilio-webhook', async (req, res) => {
     const response = new VoiceResponse();
     
     // Add a voice prompt and gather input for the first turn
-    response.say('Hallo, vielen Dank für Ihren Anruf. Ich bin ein KI-Assistent. Wie kann ich Ihnen heute helfen?');
+    response.say({
+      voice: 'Polly.Marlene',
+      language: 'de-DE'
+    }, 'Hallo, vielen Dank für Ihren Anruf. Ich bin ein KI-Assistent. Wie kann ich Ihnen heute helfen?');
     
     // Create a gather with input type speech
     const gather = response.gather({
@@ -225,7 +228,10 @@ app.post('/twilio-webhook', async (req, res) => {
     });
     
     // Add a backup say command in case the gather times out
-    response.say('Ich habe nichts gehört. Bitte versuchen Sie es später erneut.');
+    response.say({
+      voice: 'Polly.Marlene',
+      language: 'de-DE'
+    }, 'Ich habe nichts gehört. Bitte versuchen Sie es später erneut.');
     response.hangup();
     
     // Set response content type
@@ -255,7 +261,10 @@ app.post('/twilio-status', (req, res) => {
 // Add a simple endpoint for testing TwiML responses
 app.get('/test-twiml', (req, res) => {
   const response = new VoiceResponse();
-  response.say('This is a test of the Twilio response system.');
+  response.say({
+    voice: 'Polly.Marlene',
+    language: 'de-DE'
+  }, 'Dies ist ein Test des Twilio-Antwortsystems.');
   
   res.setHeader('Content-Type', 'text/xml');
   res.send(response.toString());
@@ -398,15 +407,24 @@ app.post('/gather-result', async (req, res) => {
     
     if (conversation.turnCount >= 10 || isGoodbye) {
       // End the conversation
-      response.say(assistantResponse);
-      response.say('Vielen Dank für Ihren Anruf. Auf Wiederhören!');
+      response.say({
+        voice: 'Polly.Marlene',
+        language: 'de-DE'
+      }, assistantResponse);
+      response.say({
+        voice: 'Polly.Marlene',
+        language: 'de-DE'
+      }, 'Vielen Dank für Ihren Anruf. Auf Wiederhören!');
       response.hangup();
       
       // Cleanup the conversation
       activeConversations.delete(callSid);
     } else {
       // Continue the conversation
-      response.say(assistantResponse);
+      response.say({
+        voice: 'Polly.Marlene',
+        language: 'de-DE'
+      }, assistantResponse);
       
       // Create a new gather for the next user input
       const gather = response.gather({
@@ -419,7 +437,10 @@ app.post('/gather-result', async (req, res) => {
       });
       
       // Add a timeout fallback
-      response.say('Ich habe nichts gehört. Vielen Dank für Ihren Anruf. Auf Wiederhören!');
+      response.say({
+        voice: 'Polly.Marlene',
+        language: 'de-DE'
+      }, 'Ich habe nichts gehört. Vielen Dank für Ihren Anruf. Auf Wiederhören!');
       response.hangup();
     }
     
@@ -432,7 +453,10 @@ app.post('/gather-result', async (req, res) => {
     
     // Handle failure gracefully
     const response = new VoiceResponse();
-    response.say('Entschuldigung, es ist ein Problem bei der Verarbeitung Ihrer Anfrage aufgetreten. Bitte versuchen Sie es später erneut.');
+    response.say({
+      voice: 'Polly.Marlene',
+      language: 'de-DE'
+    }, 'Entschuldigung, es ist ein Problem bei der Verarbeitung Ihrer Anfrage aufgetreten. Bitte versuchen Sie es später erneut.');
     response.hangup();
     
     res.setHeader('Content-Type', 'text/xml');
