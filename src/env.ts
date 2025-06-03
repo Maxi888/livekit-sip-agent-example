@@ -1,17 +1,37 @@
-export const verifyEnv = <T extends string>(
-  keys: T[], 
-  optionalKeys: string[] = []
-): Record<T, string> => {
-  const result: Partial<Record<T, string>> = {};
-  keys.forEach(key => {
-    if (!process.env[key] && !optionalKeys.includes(key)) {
-      console.error(`Environment variable ${key} is not set.`);
-      // eslint-disable-next-line n/no-process-exit
-      process.exit(1);
+export const verifyEnv = (
+  requiredEnvs: string[],
+  optionalEnvs: string[] = []
+): Record<string, string> => {
+  const allKeys = [...requiredEnvs, ...optionalEnvs];
+  const missingKeys: string[] = [];
+  const env: Record<string, string> = {};
+
+  for (const key of allKeys) {
+    const value = process.env[key];
+    if (!value) {
+      if (requiredEnvs.includes(key)) {
+        missingKeys.push(key);
+      }
+    } else {
+      env[key] = value;
     }
-    result[key] = process.env[key] || '';
-  });
-  return result as Record<T, string>;
+  }
+
+  if (missingKeys.length > 0) {
+    throw new Error(`Missing required environment variables: ${missingKeys.join(', ')}`);
+  }
+
+  // Set defaults for important configurations
+  return {
+    ...env,
+    // Weather feature control for production safety
+    WEATHER_ENABLED: process.env.WEATHER_ENABLED || 'true',
+    WEATHER_TIMEOUT: process.env.WEATHER_TIMEOUT || '5000',
+    WEATHER_CACHE_TTL: process.env.WEATHER_CACHE_TTL || '300000',
+    // MCP server configuration
+    MCP_SERVER_URL: process.env.MCP_SERVER_URL || 'https://prod-backend.maltesten.com:9000',
+    MCP_ENABLED: process.env.MCP_ENABLED || 'true',
+  };
 };
 
 const env = {

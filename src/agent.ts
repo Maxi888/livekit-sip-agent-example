@@ -12,6 +12,7 @@ import {fileURLToPath} from 'url';
 
 import { verifyEnv } from './env.js';
 import { weatherFunctionDefinition, executeWeatherFunction } from './realtime/weather-functions.js';
+import { mcpClient, initializeMCP } from './mcp/mcp-client.js';
 
 
 const {
@@ -22,18 +23,19 @@ const {
   SIP_USERNAME = '',
   SIP_PASSWORD = '',
   SIP_TRUNK_URI = '',
+  MCP_SERVER_URL = '',
+  MCP_ENABLED = '',
 } = verifyEnv([
   'LIVEKIT_API_KEY',
   'LIVEKIT_API_SECRET',
   'LIVEKIT_URL',
   'OPENAI_API_KEY',
-  'SIP_USERNAME',
-  'SIP_PASSWORD',
-  'SIP_TRUNK_URI',
 ], [
   'SIP_USERNAME',
   'SIP_PASSWORD',
   'SIP_TRUNK_URI',
+  'MCP_SERVER_URL',
+  'MCP_ENABLED',
 ]);
 
 console.log(`Agent starting with LiveKit URL: ${LIVEKIT_URL}`);
@@ -55,6 +57,22 @@ export const agentDefinition = defineAgent({
       metadata: ctx.job.metadata,
       agentName: ctx.job.agentName,
     })}`);
+    
+    // Initialize MCP client if enabled
+    let mcpToolsAvailable = false;
+    if (MCP_ENABLED === 'true') {
+      console.log('🔗 Initializing MCP client...');
+      try {
+        mcpToolsAvailable = await initializeMCP();
+        if (mcpToolsAvailable) {
+          console.log(`✅ MCP connected. Available tools: ${mcpClient.getAvailableToolNames().join(', ')}`);
+        }
+      } catch (error) {
+        console.error('❌ MCP initialization failed:', error);
+      }
+    } else {
+      console.log('⚠️ MCP is disabled via MCP_ENABLED environment variable');
+    }
     
     // Parse room metadata if it's a string
     const parsedMetadata = typeof ctx.room.metadata === 'string' ? 
@@ -165,6 +183,34 @@ export const agentDefinition = defineAgent({
         },
       };
 
+      // Add MCP tools to function context if available
+      if (mcpToolsAvailable && mcpClient.isClientConnected()) {
+        const mcpTools = mcpClient.getToolDefinitions();
+        console.log(`🔧 Adding ${mcpTools.length} MCP tools to function context`);
+        
+        for (const tool of mcpTools) {
+          fncCtx[tool.name] = {
+            description: tool.description,
+            parameters: tool.parameters,
+            execute: async (args: any) => {
+              console.log(`🔧 Calling MCP tool: ${tool.name}`);
+              const result = await mcpClient.callTool(tool.name, args);
+              
+              if (result.success) {
+                // Format the result for German conversation
+                if (typeof result.result === 'object') {
+                  return JSON.stringify(result.result);
+                }
+                return String(result.result);
+              } else {
+                console.error(`❌ MCP tool ${tool.name} failed:`, result.error);
+                return `Entschuldigung, es gab ein Problem beim Ausführen der Funktion ${tool.name}. Bitte versuchen Sie es später erneut.`;
+              }
+            },
+          };
+        }
+      }
+
       const agent = new multimodal.MultimodalAgent({model, fncCtx});
       const session = await agent
         .start(ctx.room, participant)
@@ -178,8 +224,26 @@ export const agentDefinition = defineAgent({
         }),
       );
       session.response.create();
+
+      // Cleanup on session end
+      session.on('end', async () => {
+        console.log('🧹 Session ended, cleaning up MCP client...');
+        if (mcpClient.isClientConnected()) {
+          await mcpClient.disconnect();
+        }
+      });
+
     } catch (error) {
       console.error('Error in agent:', error);
+      
+      // Ensure MCP client is cleaned up on error
+      if (mcpClient.isClientConnected()) {
+        try {
+          await mcpClient.disconnect();
+        } catch (cleanupError) {
+          console.error('Error during MCP cleanup:', cleanupError);
+        }
+      }
     }
   },
 });
