@@ -1,0 +1,8 @@
+{
+  "trunk": {
+    "name": "Twilio Inbound Trunk Credentials",
+    "numbers": ["+498962828048"],
+    "auth_username": "heydok_sip_123",
+    "auth_password": "jydhij-5pugho-jetByr"
+  }
+} 

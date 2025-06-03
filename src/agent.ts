@@ -11,6 +11,7 @@ import {RoomServiceClient} from 'livekit-server-sdk';
 import {fileURLToPath} from 'url';
 
 import { verifyEnv } from './env.js';
+import { weatherFunctionDefinition, executeWeatherFunction } from './realtime/weather-functions.js';
 
 
 const {
@@ -128,11 +129,14 @@ export const agentDefinition = defineAgent({
       })}`);
 
       const model = new openai.realtime.RealtimeModel({
-        instructions: `You are a helpful assistant accessible by phone.
-          You provide clear, concise answers to any questions the caller might have.
-          Be friendly, professional, and helpful at all times.
-          If the caller asks you to perform tasks you cannot do, politely explain your limitations.`,
+        instructions: `Du bist ein hilfreicher Assistent, der telefonisch erreichbar ist.
+          Du antwortest auf Deutsch und gibst klare, präzise Antworten auf alle Fragen des Anrufers.
+          Sei freundlich, professionell und hilfsbereit.
+          Falls der Anrufer dich bittet, Aufgaben zu erledigen, die du nicht ausführen kannst, erkläre höflich deine Grenzen.
+          Du kannst auch Wetterinformationen bereitstellen, wenn danach gefragt wird.`,
         apiKey: OPENAI_API_KEY,
+        modalities: ['text', 'audio'],
+        voice: 'alloy', // You can change to 'nova' for a different German voice
       });
       
       const fncCtx: llm.FunctionContext = {
@@ -148,7 +152,15 @@ export const agentDefinition = defineAgent({
               await roomServiceClient.deleteRoom(ctx.room.name!);
             }, 5000);
 
-            return 'Thank you for calling. Goodbye!';
+            return 'Vielen Dank für Ihren Anruf. Auf Wiederhören!';
+          },
+        },
+        get_weather: {
+          description: weatherFunctionDefinition.description,
+          parameters: weatherFunctionDefinition.parameters,
+          execute: async (args: { location: string }) => {
+            console.log(`🌤️ Weather function called for: ${args.location}`);
+            return await executeWeatherFunction(args);
           },
         },
       };
@@ -162,7 +174,7 @@ export const agentDefinition = defineAgent({
         new llm.ChatMessage({
           role: llm.ChatRole.ASSISTANT,
           content:
-            'Greet the caller warmly and ask how you can help them today.',
+            'Begrüße den Anrufer herzlich auf Deutsch und frage, wie du ihm heute helfen kannst.',
         }),
       );
       session.response.create();
