@@ -72,14 +72,24 @@ console.log('🎙️ Realtime WebSocket server created and listening on path: /m
 // Handle WebSocket connections from Twilio for Realtime API
 wss.on('connection', async (ws, req) => {
   console.log('🔗 New Realtime WebSocket connection established from:', req.headers['user-agent']);
+  console.log('🔍 WebSocket URL received:', req.url);
   
   // Parse URL to get room name
   const urlParams = new URLSearchParams((req.url || '').split('?')[1] || '');
   const roomName = urlParams.get('room');
   const callSid = urlParams.get('callSid');
   
+  console.log('🔍 Parsed URL parameters:', {
+    fullUrl: req.url,
+    queryString: (req.url || '').split('?')[1] || '',
+    roomName,
+    callSid,
+    allParams: Object.fromEntries(urlParams.entries())
+  });
+  
   if (!roomName || !callSid) {
     console.error('❌ Realtime WebSocket connection missing room or callSid parameter');
+    console.error('❌ Available parameters:', Object.fromEntries(urlParams.entries()));
     ws.close();
     return;
   }
