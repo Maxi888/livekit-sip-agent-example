@@ -204,7 +204,11 @@ function shouldUseRealtimeAPI(callSid: string): boolean {
 }
 
 // Main webhook for Twilio voice calls with Realtime API integration
-app.post('/twilio-webhook-realtime', async (req, res) => {
+// Handle both the new realtime endpoint and the existing webhook endpoint for compatibility
+app.post('/twilio-webhook-realtime', handleTwilioWebhookRealtime);
+app.post('/twilio-webhook', handleTwilioWebhookRealtime);
+
+async function handleTwilioWebhookRealtime(req: any, res: any) {
   try {
     console.log('📞 Received call from Twilio (Realtime):', req.body);
     
@@ -279,7 +283,7 @@ app.post('/twilio-webhook-realtime', async (req, res) => {
     res.setHeader('Content-Type', 'text/xml');
     res.send(response.toString());
   }
-});
+}
 
 // Status callback webhook for Realtime calls
 app.post('/twilio-status-realtime', (req, res) => {
