@@ -1,1 +1,1 @@
-web: npm install && npx tsx src/combined-agent-realtime.ts 
+web: npx tsx src/combined-agent-sip.ts 
