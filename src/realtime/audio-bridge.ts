@@ -67,7 +67,7 @@ export class AudioBridge extends EventEmitter {
     // Set defaults for production safety
     this.config = {
       ...config,
-      realtimeUrl: config.realtimeUrl || 'wss://api.openai.com/v1/realtime',
+      realtimeUrl: config.realtimeUrl || 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview',
       connectionTimeout: config.connectionTimeout || 10000,
       maxReconnectAttempts: config.maxReconnectAttempts || 3,
       audioBufferSize: config.audioBufferSize || 1024
