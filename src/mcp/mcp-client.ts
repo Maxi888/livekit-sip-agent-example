@@ -53,6 +53,7 @@ export class MCPClientService {
       
     } catch (error) {
       console.error('❌ Failed to connect to MCP server:', error);
+      console.log('⚠️ Agent will continue without MCP tools. Only built-in functions (weather, endCall) will be available.');
       this.isConnected = false;
       return false;
     }
@@ -64,6 +65,8 @@ export class MCPClientService {
   private async connectHttp(): Promise<void> {
     // Test connection to the MCP server
     try {
+      console.log(`🔍 Testing MCP server connection to: ${this.serverUrl}`);
+      
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -84,6 +87,16 @@ export class MCPClientService {
       console.log('✅ MCP server health check passed');
     } catch (error) {
       console.error('❌ MCP server health check failed:', error);
+      
+      // Provide more detailed error information
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          console.error('🕐 MCP server connection timed out after 5 seconds');
+        } else if (error.message.includes('fetch')) {
+          console.error('🌐 Network error connecting to MCP server - check if server is running and accessible');
+        }
+      }
+      
       throw new Error(`Failed to connect to MCP server: ${error}`);
     }
   }
@@ -249,6 +262,75 @@ export class MCPClientService {
    */
   isClientConnected(): boolean {
     return this.isConnected;
+  }
+
+  /**
+   * Test MCP server connectivity without full initialization
+   */
+  async testConnection(): Promise<{ success: boolean; error?: string; tools?: string[] }> {
+    try {
+      console.log(`🧪 Testing MCP server connectivity: ${this.serverUrl}`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+      const response = await fetch(`${this.serverUrl}/health`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: `HTTP ${response.status}: ${response.statusText}`,
+        };
+      }
+
+      // Try to get tools list
+      const toolsController = new AbortController();
+      const toolsTimeoutId = setTimeout(() => toolsController.abort(), 3000);
+
+      const toolsResponse = await fetch(`${this.serverUrl}/tools`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'tools/list',
+          params: {}
+        }),
+        signal: toolsController.signal,
+      });
+
+      clearTimeout(toolsTimeoutId);
+
+      if (toolsResponse.ok) {
+        const data: any = await toolsResponse.json();
+        const tools = data.result?.tools?.map((tool: any) => tool.name) || [];
+        return {
+          success: true,
+          tools,
+        };
+      }
+
+      return {
+        success: true,
+        tools: [],
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 }
 
