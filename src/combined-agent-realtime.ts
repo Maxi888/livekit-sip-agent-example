@@ -57,6 +57,14 @@ const roomService = new RoomServiceClient(
 // Keep track of active realtime sessions
 const activeRealtimeSessions = new Map<string, AudioBridge>();
 
+// Store call information for incoming WebSocket connections
+// Since Twilio doesn't pass query parameters, we need to map by timing/order
+const pendingCallSessions = new Map<string, {
+  roomName: string;
+  callSid: string;
+  timestamp: number;
+}>();
+
 // Initialize Express app
 const app = express();
 const server = createServer(app);
@@ -74,26 +82,37 @@ wss.on('connection', async (ws, req) => {
   console.log('🔗 New Realtime WebSocket connection established from:', req.headers['user-agent']);
   console.log('🔍 WebSocket URL received:', req.url);
   
-  // Parse URL to get room name
-  const urlParams = new URLSearchParams((req.url || '').split('?')[1] || '');
-  const roomName = urlParams.get('room');
-  const callSid = urlParams.get('callSid');
+  // Since Twilio doesn't pass query parameters, we need to find the most recent pending call
+  // This works because Twilio connects to the WebSocket immediately after receiving the TwiML
+  const now = Date.now();
+  let matchedCall: { roomName: string; callSid: string; } | null = null;
   
-  console.log('🔍 Parsed URL parameters:', {
-    fullUrl: req.url,
-    queryString: (req.url || '').split('?')[1] || '',
-    roomName,
-    callSid,
-    allParams: Object.fromEntries(urlParams.entries())
-  });
+  // Find the most recent pending call (within last 10 seconds)
+  for (const [callSid, callInfo] of pendingCallSessions.entries()) {
+    if (now - callInfo.timestamp < 10000) { // 10 second window
+      matchedCall = { roomName: callInfo.roomName, callSid: callInfo.callSid };
+      pendingCallSessions.delete(callSid); // Remove from pending
+      break;
+    }
+  }
   
-  if (!roomName || !callSid) {
-    console.error('❌ Realtime WebSocket connection missing room or callSid parameter');
-    console.error('❌ Available parameters:', Object.fromEntries(urlParams.entries()));
+  // Clean up old pending calls (older than 30 seconds)
+  for (const [callSid, callInfo] of pendingCallSessions.entries()) {
+    if (now - callInfo.timestamp > 30000) {
+      pendingCallSessions.delete(callSid);
+    }
+  }
+  
+  console.log('🔍 Matched call info:', matchedCall);
+  console.log('🔍 Pending calls count:', pendingCallSessions.size);
+  
+  if (!matchedCall) {
+    console.error('❌ No matching call found for WebSocket connection');
     ws.close();
     return;
   }
   
+  const { roomName, callSid } = matchedCall;
   console.log(`🎙️ Realtime WebSocket connected for room: ${roomName}, call: ${callSid}`);
   
   try {
@@ -265,13 +284,24 @@ async function handleTwilioWebhookRealtime(req: any, res: any) {
     
     console.log(`🎙️ Created LiveKit room for Realtime: ${roomName}`);
     
+    // Store call information for the incoming WebSocket connection
+    // Since Twilio doesn't pass query parameters to WebSocket, we use timing-based matching
+    pendingCallSessions.set(callSid, {
+      roomName: roomName,
+      callSid: callSid,
+      timestamp: Date.now()
+    });
+    
+    console.log(`🔍 Stored pending call session for ${callSid} with room ${roomName}`);
+    
     // Generate TwiML that connects to our Realtime WebSocket
     const response = new VoiceResponse();
     
     // Start media stream to our Realtime WebSocket endpoint
+    // Note: Twilio doesn't support query parameters, so we use timing-based matching
     const connect = response.connect();
     connect.stream({
-      url: `wss://livekit-sip-agent-eu-68ef5104b68b.herokuapp.com/media-stream-realtime?room=${roomName}&callSid=${callSid}`
+      url: `wss://livekit-sip-agent-eu-68ef5104b68b.herokuapp.com/media-stream-realtime`
     });
     
     // Set response content type
