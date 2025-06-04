@@ -63,48 +63,55 @@ export class MCPClientService {
    * Connect via HTTP (since your server is HTTP-based)
    */
   private async connectHttp(): Promise<void> {
-    // Test connection to the MCP server
+    // Test connection to the MCP server using JSON-RPC 2.0
     try {
       console.log(`🔍 Testing MCP server connection to: ${this.serverUrl}`);
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      // Try different health endpoints
-      const healthEndpoints = ['/health', '/api/health', '/mcp/health', '/'];
-      let healthCheckPassed = false;
-      
-      for (const endpoint of healthEndpoints) {
-        try {
-          const response = await fetch(`${this.serverUrl}${endpoint}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
+      // Test with a simple initialize call to /mcp endpoint
+      const response = await fetch(`${this.serverUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2024-11-05',
+            capabilities: {
+              tools: { call: true }
             },
-            signal: controller.signal,
-          });
-
-          // Accept any response (including 404) as server being alive
-          if (response.status < 500) {
-            console.log(`✅ MCP server responding at ${endpoint} (status: ${response.status})`);
-            healthCheckPassed = true;
-            break;
+            clientInfo: {
+              name: 'LiveKit-SIP-Agent',
+              version: '1.0.0'
+            }
           }
-        } catch (err) {
-          // Continue trying other endpoints
-          continue;
-        }
-      }
+        }),
+        signal: controller.signal,
+      });
 
       clearTimeout(timeoutId);
 
-      if (!healthCheckPassed) {
-        throw new Error('No responsive endpoints found');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      console.log('✅ MCP server health check passed');
+      const data: any = await response.json();
+      
+      // Check if it's a valid JSON-RPC response
+      if (data.jsonrpc === '2.0' && data.result) {
+        console.log('✅ MCP server initialized successfully');
+        console.log(`📡 Server info: ${data.result.serverInfo?.name || 'Unknown'} v${data.result.serverInfo?.version || 'Unknown'}`);
+      } else {
+        throw new Error('Invalid JSON-RPC response from MCP server');
+      }
+
     } catch (error) {
-      console.error('❌ MCP server health check failed:', error);
+      console.error('❌ MCP server connection failed:', error);
       
       // Provide more detailed error information
       if (error instanceof Error) {
@@ -127,53 +134,42 @@ export class MCPClientService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      // Try different tools endpoints
-      const toolsEndpoints = ['/tools', '/api/tools', '/mcp/tools', '/api/mcp'];
-      let toolsLoaded = false;
-
-      for (const endpoint of toolsEndpoints) {
-        try {
-          const response = await fetch(`${this.serverUrl}${endpoint}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              jsonrpc: '2.0',
-              id: 1,
-              method: 'tools/list',
-              params: {}
-            }),
-            signal: controller.signal,
-          });
-
-          if (response.ok) {
-            const data: any = await response.json();
-            
-            if (data.result && data.result.tools) {
-              this.availableTools = data.result.tools.map((tool: any) => ({
-                name: tool.name,
-                description: tool.description,
-                inputSchema: tool.inputSchema,
-              }));
-              
-              console.log(`📋 Loaded ${this.availableTools.length} MCP tools from ${endpoint}:`, this.availableTools.map(t => t.name));
-              toolsLoaded = true;
-              break;
-            }
-          } else {
-            console.log(`⚠️ Tools endpoint ${endpoint} returned status: ${response.status}`);
-          }
-        } catch (err) {
-          console.log(`⚠️ Failed to connect to tools endpoint ${endpoint}:`, err instanceof Error ? err.message : 'Unknown error');
-          continue;
-        }
-      }
+      const response = await fetch(`${this.serverUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 2,
+          method: 'tools/list',
+          params: {}
+        }),
+        signal: controller.signal,
+      });
 
       clearTimeout(timeoutId);
 
-      if (!toolsLoaded) {
-        console.log('⚠️ No working tools endpoints found. MCP server may use different API structure.');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch tools: HTTP ${response.status}`);
+      }
+
+      const data: any = await response.json();
+      
+      // Check for valid JSON-RPC response with tools
+      if (data.jsonrpc === '2.0' && data.result && data.result.tools) {
+        this.availableTools = data.result.tools.map((tool: any) => ({
+          name: tool.name,
+          description: tool.description,
+          inputSchema: tool.inputSchema,
+        }));
+        
+        console.log(`📋 Loaded ${this.availableTools.length} MCP tools:`, this.availableTools.map(t => t.name));
+      } else if (data.error) {
+        console.error('❌ MCP tools/list error:', data.error);
+        this.availableTools = [];
+      } else {
+        console.log('⚠️ No tools found in MCP server response');
         this.availableTools = [];
       }
     } catch (error) {
@@ -199,7 +195,7 @@ export class MCPClientService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const response = await fetch(`${this.serverUrl}/tools/call`, {
+      const response = await fetch(`${this.serverUrl}/mcp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -224,6 +220,7 @@ export class MCPClientService {
 
       const data: any = await response.json();
 
+      // Check for JSON-RPC error
       if (data.error) {
         console.error(`❌ MCP tool call failed:`, data.error);
         return {
@@ -232,10 +229,32 @@ export class MCPClientService {
         };
       }
 
-      console.log(`✅ MCP tool call successful:`, data.result);
+      // Check for valid JSON-RPC result
+      if (data.jsonrpc === '2.0' && data.result) {
+        console.log(`✅ MCP tool call successful:`, data.result);
+        
+        // Extract content from MCP response format
+        if (data.result.content && Array.isArray(data.result.content)) {
+          const textContent = data.result.content
+            .filter((item: any) => item.type === 'text')
+            .map((item: any) => item.text)
+            .join('\n');
+          
+          return {
+            success: true,
+            result: textContent || data.result,
+          };
+        }
+        
+        return {
+          success: true,
+          result: data.result,
+        };
+      }
+
       return {
-        success: true,
-        result: data.result,
+        success: false,
+        error: 'Invalid JSON-RPC response from MCP server',
       };
 
     } catch (error) {
@@ -310,11 +329,27 @@ export class MCPClientService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-      const response = await fetch(`${this.serverUrl}/health`, {
-        method: 'GET',
+      // Test initialize endpoint
+      const response = await fetch(`${this.serverUrl}/mcp`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2024-11-05',
+            capabilities: {
+              tools: { call: true }
+            },
+            clientInfo: {
+              name: 'LiveKit-SIP-Agent-Test',
+              version: '1.0.0'
+            }
+          }
+        }),
         signal: controller.signal,
       });
 
@@ -327,18 +362,27 @@ export class MCPClientService {
         };
       }
 
+      const data: any = await response.json();
+      
+      if (data.jsonrpc !== '2.0' || !data.result) {
+        return {
+          success: false,
+          error: 'Invalid JSON-RPC response',
+        };
+      }
+
       // Try to get tools list
       const toolsController = new AbortController();
       const toolsTimeoutId = setTimeout(() => toolsController.abort(), 3000);
 
-      const toolsResponse = await fetch(`${this.serverUrl}/tools`, {
+      const toolsResponse = await fetch(`${this.serverUrl}/mcp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
-          id: 1,
+          id: 2,
           method: 'tools/list',
           params: {}
         }),
@@ -348,8 +392,8 @@ export class MCPClientService {
       clearTimeout(toolsTimeoutId);
 
       if (toolsResponse.ok) {
-        const data: any = await toolsResponse.json();
-        const tools = data.result?.tools?.map((tool: any) => tool.name) || [];
+        const toolsData: any = await toolsResponse.json();
+        const tools = toolsData.result?.tools?.map((tool: any) => tool.name) || [];
         return {
           success: true,
           tools,
