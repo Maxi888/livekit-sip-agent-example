@@ -70,11 +70,12 @@ export class MCPClientService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      // Test with a simple initialize call to /mcp endpoint
-      const response = await fetch(`${this.serverUrl}/mcp`, {
+      // Test with a simple initialize call to /mcp/ endpoint (with trailing slash)
+      const response = await fetch(`${this.serverUrl}/mcp/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json, text/event-stream',
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -100,12 +101,18 @@ export class MCPClientService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data: any = await response.json();
+      const responseText = await response.text();
+      
+      // Parse Server-Sent Events format
+      const data = this.parseSSEResponse(responseText);
       
       // Check if it's a valid JSON-RPC response
       if (data.jsonrpc === '2.0' && data.result) {
         console.log('✅ MCP server initialized successfully');
         console.log(`📡 Server info: ${data.result.serverInfo?.name || 'Unknown'} v${data.result.serverInfo?.version || 'Unknown'}`);
+        if (data.result.instructions) {
+          console.log(`📝 Server purpose: ${data.result.instructions}`);
+        }
       } else {
         throw new Error('Invalid JSON-RPC response from MCP server');
       }
@@ -127,6 +134,28 @@ export class MCPClientService {
   }
 
   /**
+   * Parse Server-Sent Events response format
+   */
+  private parseSSEResponse(sseText: string): any {
+    // SSE format: "event: message\ndata: {...}\n\n"
+    const lines = sseText.split('\n');
+    let jsonData = '';
+    
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        jsonData = line.substring(6); // Remove "data: " prefix
+        break;
+      }
+    }
+    
+    if (!jsonData) {
+      throw new Error('No data found in SSE response');
+    }
+    
+    return JSON.parse(jsonData);
+  }
+
+  /**
    * Load available tools from the MCP server
    */
   private async loadAvailableTools(): Promise<void> {
@@ -134,10 +163,11 @@ export class MCPClientService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch(`${this.serverUrl}/mcp`, {
+      const response = await fetch(`${this.serverUrl}/mcp/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json, text/event-stream',
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -154,7 +184,8 @@ export class MCPClientService {
         throw new Error(`Failed to fetch tools: HTTP ${response.status}`);
       }
 
-      const data: any = await response.json();
+      const responseText = await response.text();
+      const data = this.parseSSEResponse(responseText);
       
       // Check for valid JSON-RPC response with tools
       if (data.jsonrpc === '2.0' && data.result && data.result.tools) {
@@ -195,10 +226,11 @@ export class MCPClientService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const response = await fetch(`${this.serverUrl}/mcp`, {
+      const response = await fetch(`${this.serverUrl}/mcp/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json, text/event-stream',
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -218,7 +250,8 @@ export class MCPClientService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data: any = await response.json();
+      const responseText = await response.text();
+      const data = this.parseSSEResponse(responseText);
 
       // Check for JSON-RPC error
       if (data.error) {
