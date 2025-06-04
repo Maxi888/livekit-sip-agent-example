@@ -151,10 +151,12 @@ export const agentDefinition = defineAgent({
           Du antwortest auf Deutsch und gibst klare, präzise Antworten auf alle Fragen des Anrufers.
           Sei freundlich, professionell und hilfsbereit.
           Falls der Anrufer dich bittet, Aufgaben zu erledigen, die du nicht ausführen kannst, erkläre höflich deine Grenzen.
-          Du kannst auch Wetterinformationen bereitstellen, wenn danach gefragt wird.`,
+          Du kannst auch Wetterinformationen bereitstellen, wenn danach gefragt wird.
+          Du kannst auch beim Vereinbaren von Terminen helfen - frage nach der Telefonnummer, gewünschtem Termintyp und bevorzugtem Standort.`,
         apiKey: OPENAI_API_KEY,
         modalities: ['text', 'audio'],
         voice: 'alloy', // You can change to 'nova' for a different German voice
+        model: 'gpt-4o-mini-realtime-preview-2024-12-17', // Using GPT-4o mini for cost efficiency
       });
       
       const fncCtx: llm.FunctionContext = {
