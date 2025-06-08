@@ -156,7 +156,8 @@ export const agentDefinition = defineAgent({
         apiKey: OPENAI_API_KEY,
         modalities: ['text', 'audio'],
         voice: 'alloy', // You can change to 'nova' for a different German voice
-        model: 'gpt-4o-mini-realtime-preview-2024-12-17', // Using GPT-4o mini for cost efficiency
+        model: 'gpt-4o-realtime-preview-2025-06-03', // Updated to latest Realtime API version
+        turnDetection: { type: 'server_vad' }, // Using server VAD for conversation flow detection
       });
       
       const fncCtx: llm.FunctionContext = {
