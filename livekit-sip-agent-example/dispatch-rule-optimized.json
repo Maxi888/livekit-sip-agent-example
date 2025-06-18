@@ -1,0 +1,10 @@
+{
+  "rule": {
+    "dispatchRuleIndividual": {
+      "roomPrefix": "call-_",
+      "trunkIds": ["ST_o9EWWEnzvSKX"],
+      "pin": "",
+      "agent": "my-telephony-agent"
+    }
+  }
+} 

@@ -1,0 +1,5 @@
+{
+  "allowed_addresses": ["54.236.168.131/32", "172.20.11.236/32", "89.184.187.124/32"],
+  "auth_username": "jambonz_user",
+  "auth_password": "jambonz_secure_password_2024"
+} 

@@ -1,0 +1,11 @@
+{
+  "rule": {
+    "dispatch_rule_direct": {
+      "room_name": "call-*",
+      "agent_name": "my-telephony-agent"
+    }
+  },
+  "name": "Twilio Only Dispatch",
+  "trunk_ids": ["ST_4Z3syPUw3LoL"],
+  "hide_phone_number": false
+} 

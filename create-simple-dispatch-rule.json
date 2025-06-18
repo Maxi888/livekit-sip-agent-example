@@ -1,0 +1,8 @@
+{
+  "rule": {
+    "dispatch_rule_direct": {
+      "room_name": "call-*",
+      "agent_name": "my-telephony-agent"
+    }
+  }
+} 

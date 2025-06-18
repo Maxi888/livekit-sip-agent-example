@@ -1,0 +1,9 @@
+{
+  "sip_trunk_ids": ["ST_4Z3syPUw3LoL", "ST_o9EWWEnzvSKX"],
+  "rule": {
+    "dispatch_rule_direct": {
+      "room_name": "call-_<caller>_<random>",
+      "agent_name": "my-telephony-agent"
+    }
+  }
+} 
